@@ -1,94 +1,86 @@
-cand = """## POSSIBLE ROOT CAUSE REASONS:
-        
-- high CPU usage
-- high memory usage 
-- network latency 
-- network packet loss
-- high disk I/O read usage 
-- high disk space usage
-- high JVM CPU load 
-- JVM Out of Memory (OOM) Heap
+cand = """## 可能的根本原因：
 
-## POSSIBLE ROOT CAUSE COMPONENTS:
+CPU 使用率高
+内存使用率高
+网络延迟
+网络丢包
+磁盘 I/O 读取使用率高
+磁盘空间使用率高
+JVM CPU 负载高
+JVM 内存溢出 (OOM) 堆
+可能的根本原因组件：
+apache01
+apache02
+Tomcat01
+Tomcat02
+Tomcat04
+Tomcat03
+MG01
+MG02
+IG01
+IG02
+Mysql01
+Mysql02
+Redis01
+Redis02"""
 
-- apache01
-- apache02
-- Tomcat01
-- Tomcat02
-- Tomcat04
-- Tomcat03
-- MG01
-- MG02
-- IG01
-- IG02
-- Mysql01
-- Mysql02
-- Redis01
-- Redis02"""
 
-schema = f"""## TELEMETRY DIRECTORY STRUCTURE:
 
-- You can access the telemetry directory in our microservices system: `dataset/Bank/telemetry/`.
+schema = f"""## 遥测数据目录结构：
 
-- This directory contains subdirectories organized by a date (e.g., `dataset/Bank/telemetry/2021_03_05/`). 
+您可以访问我们微服务系统中的遥测数据目录：dataset/Bank/telemetry/。
 
-- Within each date-specific directory, you’ll find these subdirectories: `metric`, `trace`, and `log` (e.g., `dataset/Bank/telemetry/2021_03_05/metric/`).
 
-- The telemetry data in those subdirectories is stored in CSV format (e.g., `dataset/Bank/telemetry/2021_03_05/metric/metric_container.csv`).
+在分析的时候请读取dataset/Bank/telemetry/ 下面的所有日志的数据
+该目录包含按日期组织的子目录（例如，dataset/Bank/telemetry/2021_03_05/）。
 
-## DATA SCHEMA
+对于metric文件夹下面每一个文件都需要进行分析
+在每个特定日期的目录中，您会找到以下子目录：metric（例如，dataset/Bank/telemetry/2021_03_05/metric/）。
 
-1.  **Metric Files**:
-    
-    1. `metric_app.csv`:
+这些子目录中的遥测数据以 CSV 格式存储（例如，dataset/Bank/telemetry/2021_03_05/metric/metric_container.csv）。
 
-        ```csv
-        timestamp,rr,sr,cnt,mrt,tc
-        1614787440,100.0,100.0,22,53.27,ServiceTest1
-        ```
+数据模式
+指标文件：
 
-    2. `metric_container.csv`:
+metric_app.csv：
 
-        ```csv
-        timestamp,cmdb_id,kpi_name,value
-        1614787200,Tomcat04,OSLinux-CPU_CPU_CPUCpuUtil,26.2957
-        ```
+CSV
+timestamp,rr,sr,cnt,mrt,tc
+1614787440,100.0,100.0,22,53.27,ServiceTest1
+metric_container.csv：
 
-2.  **Trace Files**:
+CSV
+timestamp,cmdb_id,kpi_name,value
+1614787200,Tomcat04,OSLinux-CPU_CPU_CPUCpuUtil,26.2957
+追踪文件：
 
-    1. `trace_span.csv`:
+trace_span.csv：
 
-        ```csv
-        timestamp,cmdb_id,parent_id,span_id,trace_id,duration
-        1614787199628,dockerA2,369-bcou-dle-way1-c514cf30-43410@0824-2f0e47a816-17492,21030300016145905763,gw0120210304000517192504,19
-        ```
+CSV
+timestamp,cmdb_id,parent_id,span_id,trace_id,duration
+1614787199628,dockerA2,369-bcou-dle-way1-c514cf30-43410@0824-2f0e47a816-17492,21030300016145905763,gw0120210304000517192504,19
+日志文件：
 
-3.  **Log Files**:
+log_service.csv：
 
-    1. `log_service.csv`:
+CSV
+log_id,timestamp,cmdb_id,log_name,value
+8c7f5908ed126abdd0de6dbdd739715c,1614787201,Tomcat01,gc,"3748789.580: [GC (CMS Initial Mark) [1 CMS-initial-mark: 2462269K(3145728K)] 3160896K(4089472K), 0.1985754 secs] [Times: user=0.59 sys=0.00, real=0.20 secs] "
 
-        ```csv
-        log_id,timestamp,cmdb_id,log_name,value
-        8c7f5908ed126abdd0de6dbdd739715c,1614787201,Tomcat01,gc,"3748789.580: [GC (CMS Initial Mark) [1 CMS-initial-mark: 2462269K(3145728K)] 3160896K(4089472K), 0.1985754 secs] [Times: user=0.59 sys=0.00, real=0.20 secs] "
-        ```
 
-{cand}
+遥测数据说明：
+此微服务系统是一个银行平台。
 
-## CLARIFICATION OF TELEMETRY DATA:
+metric_app.csv 文件仅包含四个 KPI：rr, sr, cnt 和 mrt。相比之下，metric_container.csv 记录了多种 KPI，例如 CPU 使用率和内存使用率。这些 KPI 的具体名称可以在 kpi_name 字段中找到。
 
-1. This microservice system is a banking platform.
+在不同的遥测文件中，时间戳单位和 cmdb_id 格式可能不同：
 
-2. The `metric_app.csv` file only contains four KPIs: rr, sr, cnt, and mrt,. In contrast, `metric_container.csv` records a variety of KPIs, such as CPU usage and memory usage. The specific names of these KPIs can be found in the `kpi_name` field.
+指标：时间戳单位为秒（例如，1614787440）。
 
-3. In different telemetry files, the timestamp units and cmdb_id formats may vary:
+追踪：时间戳单位为毫秒（例如，1614787199628）。
 
-- Metric: Timestamp units are in seconds (e.g., 1614787440).
+日志：时间戳单位为秒（例如，1614787201）。
 
-- Trace: Timestamp units are in milliseconds (e.g., 1614787199628).
+由于系统部署在中国/香港/新加坡，请在所有分析步骤中使用 UTC+8 时区。
 
-- Log: Timestamp units are in seconds (e.g., 1614787201).
-
-4. Please use the UTC+8 time zone in all analysis steps since system is deployed in China/Hong Kong/Singapore.
-
-5. 务必使用中文"""
-
+务必使用中文"""

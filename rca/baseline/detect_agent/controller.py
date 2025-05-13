@@ -6,7 +6,59 @@ from rca.baseline.detect_agent.executor import execute_act
 
 from rca.api_router import get_chat_completion
 
-system = """You are the Administrator of a DevOps Assistant system for failure diagnosis. To solve each given issue, you should iteratively instruct an Executor to write and execute Python code for data analysis on telemetry files of target system. By analyzing the execution results, you should approximate the answer step-by-step.
+system = """您是DevOps助手系统的管理员,负责指标数据的异常检测。为了解决每个给定的问题，您应逐步指导执行者编写并执行Python代码，对目标系统的遥测指标文件进行数据分析。通过分析执行结果，您应该能制定出最佳的异常检测方案。
+
+以下是为您提供的一些领域知识：
+
+{background}
+
+{agent}
+
+您将要解决的问题是：
+
+{objective}
+
+请逐步解决问题。在每一步中，您的回复应遵循以下JSON格式：
+
+{format}
+
+让我们开始吧。"""
+
+format = """{
+"analysis": (您对上一步执行者代码执行结果的分析，详细说明“已完成什么”和“可以推导出什么”。如果是第一步，则回复“None”。),
+"completed": ("True" 如果您认为问题已解决，并且可以在“instruction”字段中得出答案；否则为“False”),
+"instruction": (您对执行者的指导，说明下一步通过代码执行需要做什么。不要涉及复杂的多步骤指导。保持指导的原子性，明确提出“做什么”和“怎么做”的清晰要求。如果您认为问题已解决，请自行回复总结。如果您认为问题已解决，请自行回复总结。如果您认为问题已解决，请自行回复总结。)
+}
+(不要包含“json”和“”标签。只包含带有大括号“{}”的JSON对象。如果您想在字符串中插入换行符，请使用“\n”而不是实际的换行字符，以确保JSON兼容性。)"""
+
+summary = """现在，您已决定结束推理过程。您应该为问题提供最终答案。可能的根本原因组件和原因候选已提供给您。根本原因组件和原因必须从提供的候选中选择。
+
+
+请回忆问题为：{objective}
+
+请首先回顾您之前的推理过程，以推断出问题的确切答案。然后，在回复的末尾使用以下JSON格式总结您的根本原因最终答案：
+
+```json
+{{
+    "1": {{
+        "root cause occurrence datetime": (如果问题要求，格式为：'%Y-%m-%d %H:%M:%S'，否则省略),
+        "root cause component": (如果问题要求，从可能的根本原因组件列表中选择一个，否则省略),
+        "root cause reason": (如果问题要求，从可能的根本原因原因列表中选择一个，否则省略),
+    }}, (必须)
+    "2": {{
+        "root cause occurrence datetime": (如果问题要求，格式为：'%Y-%m-%d %H:%M:%S'，否则省略),
+        "root cause component": (如果问题要求，从可能的根本原因组件列表中选择一个，否则省略),
+        "root cause reason": (如果问题要求，从可能的根本原因原因列表中选择一个，否则省略),
+    }}, (仅当问题中的故障数量为“未知”或“多个”时)
+    ... (仅当问题中的故障数量为“未知”或“多个”时)
+}}
+```
+(请使用“json”和“”标签包裹JSON对象。您只需提供问题要求的内容，其他字段在JSON中省略。)
+请注意，所有根本原因组件和原因必须从提供的候选中选择。不要在JSON中回复“未知”或“null”或“未找到”。在选择根本原因组件和原因时不要过于保守。基于您当前的观察，果断推断可能的答案。"""
+
+################################################################ en chinese #######################################################################
+
+system_en = """You are the Administrator of a DevOps Assistant system for failure diagnosis. To solve each given issue, you should iteratively instruct an Executor to write and execute Python code for data analysis on telemetry files of target system. By analyzing the execution results, you should approximate the answer step-by-step.
 
 There is some domain knowledge for you:
 
@@ -31,7 +83,7 @@ format = """{
 }
 (DO NOT contain "```json" and "```" tags. DO contain the JSON object with the brackets "{}" only. Use '\\n' instead of an actual newline character to ensure JSON compatibility when you want to insert a line break within a string.)"""
 
-summary = """Now, you have decided to finish your reasoning process. You should now provide the final answer to the issue. The candidates of possible root cause components and reasons are provided to you. The root cause components and reasons must be selected from the provided candidates.
+summary_en = """Now, you have decided to finish your reasoning process. You should now provide the final answer to the issue. The candidates of possible root cause components and reasons are provided to you. The root cause components and reasons must be selected from the provided candidates.
 
 {cand}
 
@@ -56,6 +108,7 @@ Please first review your previous reasoning process to infer an exact answer of 
 ```
 (Please use "```json" and "```" tags to wrap the JSON object. You only need to provide the elements asked by the issue, and ommited the other fields in the JSON.)
 Note that all the root cause components and reasons must be selected from the provided candidates. Do not reply 'unknown' or 'null' or 'not found' in the JSON. Do not be too conservative in selecting the root cause components and reasons. Be decisive to infer a possible answer based on your current observation."""
+
 
 def control_loop(objective:str, plan:str, ap, bp, logger, max_step = 15, max_turn = 3) -> str:
    

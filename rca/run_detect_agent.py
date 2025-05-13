@@ -271,5 +271,5 @@ if __name__ == "__main__":
 
     output_path = "/data/NAB/OpenRCA/test"
     dataset = "Bank"
-    query = "query"
+    query = "对apache01的指标配置异常检测方案"
     run_single_query(query, dataset, output_path)

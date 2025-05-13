@@ -1,44 +1,47 @@
-rules = """## RULES OF FAILURE DIAGNOSIS:
+rules = """## 指标数据异常检测规则：
 
-What you SHOULD do:
+您应该做的事情：
 
-1. **Follow the workflow of `preprocess -> anomaly detection -> fault identification -> root cause localization` for failure diagnosis.** 
-    1.1. Preprocess:
-        - Aggregate each KPI of each components that are possible to be the root cause component to obtain multiple time series classified by 'component-KPI' (e.g., service_A-cpu_usage_pct).
-        - Then, calculate global thresholds (e.g., global P95, where 'global' means the threshold of all 'component-KPI' time series within a whole metric file) for each 'component-KPI' time series. - Finally, filter data within the given time duration for all time series to perform further analysis.
-        - Since the root cause component must be selected from the provided possible root cause components, all other level's components (e.g., service mesh components, middleware components, etc.) should be ignored.
-    1.2. Anomaly detection: 
-        - An anomaly is typically a data point that exceeds the global threshold.
-        - Look for anomalies below a certain threshold (e.g., <=P95, <=P15, or <=P5) in traffic KPIs or business KPIs (e.g., success rate (ss)) since some network failures can cause a sudden drop on them due to packet loss.
-        - Loose the global threshold (e.g., from >=P95 to >=P90, or from <=P95 to <=P15, <=P5) if you really cannot find any anomalies.
-    1.3. Fault identification: 
-        - A 'fault' is a consecutive sub-series of a specific component-KPI time series. Thus, fault identification is the process of identifying which components experienced faults, on which resources, and at what occurrence time points.
-        - Filter out isolated noise spikes to locate faults.
-        - Faults where the maximum (or minimum) value in the sub-series only slightly exceeds (or falls below) the threshold (e.g., threshold breach <= 50% of the extremal), it’s likely a false positive caused by random KPI fluctuations, and should be excluded.
-    1.4. Root cause localization: 
-        - The objective of root cause localization is to determine which identified 'fault' is the root cause of the failure. The root cause occurrence time, component, and reason can be derived from the first piece of data point of that fault.
-        - If multiple faulty components are identified at **different levels** (e.g., some being containers and others nodes), and all of them are potential root cause candidates, while the issue itself describes a **single failure**, the root cause level should be determined by the fault that shows the most significant deviation from the threshold (i.e., >> 50%). However, this method is only applicable to identify the root cause level, not the root cause component. If there are multiple faulty components at the same level, you should use traces and logs to identify the root cause component.
-        - If multiple service-level faulty components are identified, the root cause component is typically the last (the most downstream in a call chain) **faulty** service within a trace. Use traces to identify the root cause component among multiple faulty services.
-        - If multiple container-level faulty components are identified, the root cause component is typically the last (the most downstream in a call chain) **faulty** container within a trace. Use traces to identify the root cause component among multiple faulty container.
-        - If multiple node-level faulty components are identified and the issue doesn't specify **a single failure**, each of these nodes might be the root cause of separate failures. Otherwise, the predominant nodes with the most faults is the root cause component. The node-level failure do not propagate, and trace only captures communication between all containers or all services.
-        - If only one component's one resource KPI has one fault occurred in a specific time, that fault is the root cause. Otherwise, you should use traces and logs to identify the root cause component and reason.
-2. **Follow the order of `threshold calculation -> data extraction -> metric analyis -> trace analysis -> log analysis` for failure diagnosis.** 
-    2.0. Before analysis: You should extract and filter the data to include those within the failure duration only after the global threshold has been calculated. After these two steps, you can perform metric analysis, trace analysis, and log analysis.
-    2.1. Metric analysis: Use metrics to calculate whether each KPIs of each component has consecutive anomalies beyond the global threshold is the fastest way to find the faults. Since there are a large number of traces and logs, metrics analysis should first be used to narrow down the search space of duration and components.
-    2.2. Trace analysis: Use traces can further localize which container-level or service-level faulty component is the root cause components when there are multiple faulty components at the same level (container or service) identified by metrics analysis.
-    2.3. Log analysis: Use logs can further localize which resource is the root cause reason when there are multiple faulty resource KPIs of a component identified by metrics analysis. Logs can also help to identify the root cause component among multiple faulty components at the same level.
-    2.4. Always confirm whether the target key or field is valid (e.g., component's name, KPI's name, trace ID, log ID, etc.) when Executor's retrieval result is empty.
+1. 预处理 -> 指标数据特征分析 -> 异常检测方案制定-> 历史数据回测 
+1.1. 预处理：
+- 收集并聚合每个组件的各项KPI指标，形成按"组件-KPI"分类的多个时间序列（例如，service_A-cpu_usage_pct）。
+- 对每个"组件-KPI"时间序列计算全局阈值（如全局P95值，即整个指标文件中该"组件-KPI"时间序列的第95百分位值）。
+- 筛选出给定时间段内的数据，为后续分析做准备。
+- 只关注提供的可能根本原因组件列表中的组件，忽略其他级别的组件。
 
-What you SHOULD NOT do:
+1.2. 指标数据特征分析：
+- 为每个"组件-KPI"时间序列提取特征。
+- 计算统计特征：均值、方差、最大值、最小值、中位数、P10、P25、P50、P75、P90、P95等。
+- 分析时间序列的趋势、季节性和周期性特征，识别潜在的模式和规律。
+- 评估各指标间的相关性，了解不同KPI之间的依赖关系。
 
-1. **DO NOT include any programming language (Python) in your response.** Instead, you should provide a ordered list of steps with concrete description in natural language (English).
-2. **DO NOT convert the timestamp to datetime or convert the datetime to timestamp by yourself.** These detailed process will be handled by the Executor.
-3. **DO NOT use the local data (filtered/cached series in specific time duration) to calculate the global threshold of aggregated 'component-KPI' time series.** Always use the entire KPI series of a specific component within a metric file (typically includes one day's KPIs) to calculate the threshold. To obtain global threshold, you can first aggregate each component's each KPI to calculate their threshold, and then retrieve the objective time duration of aggregated 'component-KPI' to perform anomaly detection and spike filtering.
-4. **DO NOT visualize the data or draw pictures or graphs via Python.** The Executor can only provide text-based results. Never include the `matplotlib` or `seaborn` library in the code.
-5. **DO NOT save anything in the local file system.** Cache the intermediate results in the IPython Kernel. Never use the bash command in the code cell.
-6. **DO NOT calculate threshold AFTER filtering data within the given time duration.** Always calculate global thresholds using the entire KPI series of a specific component within a metric file BEFORE filtering data within the given time duration.
-7. **DO NOT query a specific KPI without knowing which KPIs are available.** Different systems may have completely different KPI naming conventions. If you want to query a specific KPI, first ensure that you are aware of all the available KPIs.
-8. **DO NOT mistakenly identify a healthy (non-faulty) service at the downstream end of a trace that includes faulty components as the root cause.** The root cause component should be the most downstream **faulty** service to appear within the trace call chain, which must first and foremost be a FAULTY component identified by metrics analysis.
-9. **DO NOT focus solely on warning or error logs during log analysis. Many info logs contain critical information about service operations and interactions between services, which can be valuable for root cause analysis.**
-10. **DO NOT use English in your response.** Use Chinese.
+1.3. 异常检测方案制定：
+- 基于全局阈值识别异常数据点，例如超过P95或低于P5的值。
+- 对于流量KPI或业务KPI（如成功率），特别关注低于阈值的异常（例如，<=P15或<=P5），因为网络故障可能导致这些指标突然下降。
+- 结合多种检测方法：统计阈值法、变化率检测、聚类分析等，提高检测准确性。
+- 如需要，可适当调整阈值范围以捕获更多潜在异常（例如，从>=P95调整到>=P90）。
+
+1.4 历史数据回测：
+- 使用历史数据验证所设计的异常检测方案的有效性。
+- 计算检测方案的准确率、召回率和F1分数，评估检测性能。
+- 分析误报和漏报情况，调整阈值或检测策略以优化性能。
+- 验证检测方案在不同时间段和不同负载条件下的稳定性和可靠性。
+- 根据回测结果，确定最终的告警规则配置，包括阈值设置、持续时间要求和告警级别。
+
+
+
+指标数据特征分析、异常检测方案制定、历史数据回测，这个过程需要重复多次，直到找到最优的异常检测方案。
+
+您不应该做的事情：
+
+不要在回复中包含任何编程语言（Python）。 相反，您应该用自然语言（中文）提供一个有序的步骤列表，并给出具体的描述。
+不要自行将时间戳转换为日期时间或将日期时间转换为时间戳。 这些详细过程将由执行者处理。
+不要使用本地数据（在特定时间段内过滤/缓存的序列）来计算聚合的“组件-KPI”时间序列的全局阈值。 始终使用指标文件中特定组件的整个KPI序列（通常包括一天的KPI）来计算阈值。为了获得全局阈值，您可以先聚合每个组件的每个KPI以计算其阈值，然后检索目标时间段的聚合“组件-KPI”以进行异常检测和尖峰过滤。
+不要通过Python可视化数据或绘制图片或图表。 执行者只能提供基于文本的结果。代码中绝不包含matplotlib或seaborn库。
+不要在本地文件系统中保存任何内容。 将中间结果缓存到IPython Kernel中。代码单元中绝不使用bash命令。
+不要在给定时间段内过滤数据后再计算阈值。 始终在过滤给定时间段数据之前，使用指标文件中特定组件的整个KPI序列计算全局阈值。
+不要在不知道有哪些KPI可用时查询特定KPI。 不同系统可能有完全不同的KPI命名约定。如果您想查询特定KPI，请首先确保您了解所有可用的KPI。
+不要错误地将追踪中包含故障组件的下游端健康（非故障）服务识别为根本原因。 根本原因组件应是追踪调用链中出现的最下游故障服务，必须首先是通过指标分析识别出的故障组件。
+不要在日志分析时仅关注警告或错误日志。许多信息日志包含有关服务操作和服务之间交互的关键信息，这些信息对根本原因分析非常有价值。
+不要在回复中使用英文。 使用中文。
 """
