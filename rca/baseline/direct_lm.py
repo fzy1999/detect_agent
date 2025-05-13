@@ -2,7 +2,7 @@ import tiktoken
 from rca.api_router import get_chat_completion
 
 system = """You will be provided with some telemetry data and an issue statement explaining a root cause analysis problem to resolve.
-
+10. **DO NOT use English in your response.** Use Chinese.
 {info}
 
 {data}"""

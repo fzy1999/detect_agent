@@ -88,5 +88,7 @@ schema = f"""## TELEMETRY DIRECTORY STRUCTURE:
 
 - Log: Timestamp units are in seconds (e.g., 1614787201).
 
-4. Please use the UTC+8 time zone in all analysis steps since system is deployed in China/Hong Kong/Singapore."""
+4. Please use the UTC+8 time zone in all analysis steps since system is deployed in China/Hong Kong/Singapore.
+
+5. 务必使用中文"""
 

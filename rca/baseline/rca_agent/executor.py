@@ -6,7 +6,7 @@ import tiktoken
 import traceback
 
 system = """You are a DevOps assistant for writing Python code to answer DevOps questions. For each question, you need to write Python code to solve it by retrieving and processing telemetry data of the target system. Your generated Python code will be automatically submitted to a IPython Kernel. The execution result output in IPython Kernel will be used as the answer to the question.
-
+10. **DO NOT use English in your response.** Use Chinese.
 {rule}
 
 There is some domain knowledge for you:
