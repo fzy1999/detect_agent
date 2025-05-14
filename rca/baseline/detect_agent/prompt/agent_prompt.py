@@ -12,7 +12,7 @@ Step 0 准备输入
 
 Step 1 语义解析 & 监控目标确认
 
-1.1 拆解名字，弄清“物理上限”“希望方向”。
+1.1 拆解名字，弄清“指标的业务含义”“可能的异常模式”。
 
 　　示例：
 
@@ -20,22 +20,44 @@ Step 1 语义解析 & 监控目标确认
 
 　　OSLinux-CPU_CPU_CPUidleutil → CPU Idle（0-100%，越低越危险）
 
-　　OSLinux-OSLinux_FILESYSTEM_-FSCapacity → 所有挂载点容量百分比
 
-　　OSLinux-OSLinux_FILESYSTEM-apache_FSCapacity → 指定 /apache 分区容量百分比
 
-　　OSLinux-OSLinux_MEMORY_MEMORY_MEMUsedMemPerc → 含 cache 的已用内存百分比
+1.2 明确异常场景：
 
-　　OSLinux-OSLinux_MEMORY_MEMORY_NoCacheMemP → 去掉 page cache 后的内存占用百分比
-
-1.2 明确告警场景：
-
+阈值判定：
 　　• 上限型：超过阈值才算异常（CPUCpuUtil、FSCapacity、MEMUsedMemPerc）
 
 　　• 下限型：低于阈值才算异常（CPUidleutil）
 
 　　• 双尾型：上下都有风险（极少见，通常是 QPS、延迟类）
 
+波动判定：
+    向上波动率：
+    向下波动率：
+    中断上报：
+
+同环比判定： 
+    同比上周均值
+    同比昨天
+    同比上周同天
+    环比前10个点均值
+    环比前1个点
+    环比上周前一个点
+    环比昨天前一个点
+
+
+其他异常场景：
+    - 向上的尖刺：指标数值单点向上突增。
+        
+    - 向下的尖刺：指标数值单点向下突降。
+        
+    - 向上的漂移：指标数值连续若干点平台上升。
+        
+    - 向下的漂移：指标数值连续若干点平台下降。
+        
+    - 趋势性上涨：指标数值连续若干点持续上升。
+        
+    - 趋势项下跌：指标数值连续若干点持续下降
 ================================================================
 
 Step 2 数据摸底 (Profiling)
@@ -52,7 +74,7 @@ Step 2 数据摸底 (Profiling)
 
 　　d) 大量缺失值或采样间隔异常
 
-Tip：这一步用 notebook + Prometheus API/Grafana Explore 就够。
+
 
 ================================================================
 

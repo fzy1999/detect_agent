@@ -60,80 +60,57 @@ cand = """## POSSIBLE ROOT CAUSE REASONS:
 - db_012
 - db_013"""
 
-schema = f"""## TELEMETRY DIRECTORY STRUCTURE:
+schema = f"""## 遥测数据目录结构：
 
-- You can access the telemetry directory in our microservices system: `dataset/Telecom/telemetry/`
+您可以访问我们微服务系统中的遥测数据目录：dataset/Telecom/telemetry/
 
-- This directory contains subdirectories organized by a date (e.g., `dataset/Telecom/telemetry/2020_04_11/`). 
+在分析的时候请读取dataset/Telecom/telemetry/ 下面的所有日志的数据
+该目录包含按日期组织的子目录（例如，dataset/Telecom/telemetry/2020_04_11/）。
 
-- Within each date-specific directory, you’ll find these subdirectories: `metric` and `trace` (e.g., `dataset/Telecom/telemetry/2020_04_11/metric/`).
+对于metric文件夹下面每一个文件都需要进行分析
+在每个特定日期的目录中，您会找到以下子目录：metric 和 trace（例如，dataset/Telecom/telemetry/2020_04_11/metric/）。
 
-- The telemetry data in those subdirectories is stored in CSV format (e.g., `dataset/Telecom/telemetry/2020_04_11/metric/metric_container.csv`).
+这些子目录中的遥测数据以 CSV 格式存储（例如，dataset/Telecom/telemetry/2020_04_11/metric/metric_container.csv）。
 
-## DATA SCHEMA
+数据模式
+指标文件：
 
-1.  **Metric Files**:
-    
-    1. `metric_app.csv`:
+metric_app.csv：
 
-        ```csv
-        serviceName,startTime,avg_time,num,succee_num,succee_rate
-        osb_001,1586534400000,0.333,1,1,1.0
-        ```
+CSV
+serviceName,startTime,avg_time,num,succee_num,succee_rate
+osb_001,1586534400000,0.333,1,1,1.0
+metric_container.csv：
 
-    2. `metric_container.csv`:
+CSV
+itemid,name,bomc_id,timestamp,value,cmdb_id
+999999996381330,container_mem_used,ZJ-004-060,1586534423000,59.000000,docker_008
+metric_middleware.csv：
 
-        ```csv
-        itemid,name,bomc_id,timestamp,value,cmdb_id
-        999999996381330,container_mem_used,ZJ-004-060,1586534423000,59.000000,docker_008
-        ```
+CSV
+itemid,name,bomc_id,timestamp,value,cmdb_id
+999999996508323,connected_clients,ZJ-005-024,1586534672000,25,redis_003
+metric_node.csv：
 
-    3. `metric_middleware.csv`:
+CSV
+itemid,name,bomc_id,timestamp,value,cmdb_id
+999999996487783,CPU_iowait_time,ZJ-001-010,1586534683000,0.022954,os_017
+metric_service.csv：
 
-        ```csv
-        itemid,name,bomc_id,timestamp,value,cmdb_id
-        999999996508323,connected_clients,ZJ-005-024,1586534672000,25,redis_003
-        ```
+CSV
+itemid,name,bomc_id,timestamp,value,cmdb_id
+999999998650974,MEM_Total,ZJ-002-055,1586534694000,381.902264,db_003
+追踪文件：
 
-    4. `metric_node.csv`:
 
-        ```csv
-        itemid,name,bomc_id,timestamp,value,cmdb_id
-        999999996487783,CPU_iowait_time,ZJ-001-010,1586534683000,0.022954,os_017
-        ```
 
-    5. `metric_service.csv`:
+遥测数据说明：
+此服务系统是一个电信数据库系统。
 
-        ```csv
-        itemid,name,bomc_id,timestamp,value,cmdb_id
-        999999998650974,MEM_Total,ZJ-002-055,1586534694000,381.902264,db_003
-        ```
+metric_app.csv 文件仅包含五个 KPI：startTime, avg_time, num, succee_num, succee_rate。相比之下，其他指标文件记录了多种 KPI，例如 CPU 使用率和内存使用率。这些 KPI 的具体名称可以在 name 字段中找到。
 
-2.  **Trace Files**:
+在所有遥测文件中，时间戳单位和 cmdb_id 格式保持一致：
 
-    1. `trace_span.csv`:
-
-        ```csv
-        callType,startTime,elapsedTime,success,traceId,id,pid,cmdb_id,dsName,serviceName
-        JDBC,1586534400335,2.0,True,01df517164d1c0365586,407d617164d1c14f2613,6e02217164d1c14b2607,docker_006,db_003,
-        LOCAL,1586534400331,6.0,True,01df517164d1c0365586,6e02217164d1c14b2607,8432217164d1c1442597,docker_006,db_003,local_method_017
-        RemoteProcess,1586534400324,55.0,True,01df517164d1c0365586,8432217164d1c1442597,b755e17164d1c13f5066,docker_006,,csf_005
-        FlyRemote,1586534400149,7.0,TRUE,fa1e817164d1c0375444,da74117164d1c0955052,b959f17164d1c08c5050,docker_003,,fly_remote_001
-        OSB,1586534660846,376.0,True,d9c4817164d5baee6924,77d1117164d5baee6925,None,os_021,,osb_001
-        ```
-
-{cand}
-
-## CLARIFICATION OF TELEMETRY DATA:
-
-1. This service system is a telecom database system.
-
-2. The `metric_app.csv` file only contains five KPIs: startTime, avg_time, num, succee_num, succee_rate. In contrast, other metric files record a variety of KPIs, such as CPU usage and memory usage. The specific names of these KPIs can be found in the `name` field.
-
-3. In all telemetry files, the timestamp units and cmdb_id formats remain consistent:
-
-- Metric: Timestamp units are in milliseconds (e.g., 1586534423000).
-
-- Trace: Timestamp units are in milliseconds (e.g., 1586534400335).
-
-4. Please use the UTC+8 time zone in all analysis steps since system is deployed in China/Hong Kong/Singapore."""
+指标：时间戳单位为毫秒（例如，1586534423000）。
+追踪：时间戳单位为毫秒（例如，1586534400335）。
+由于系统部署在中国/香港/新加坡，请在所有分析步骤中使用 UTC+8 时区。"""

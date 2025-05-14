@@ -270,7 +270,13 @@ if __name__ == "__main__":
     #     main(args, uid, dataset)
 
     output_path = "/data/NAB/OpenRCA/test"
-    dataset = "Bank"
-    query = "对apache01的指标配置异常检测方案 CPU 利用率（OSLinux-CPU_CPU_CPUCpuUtil）、内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_MEMUsedMemPerc）、非缓存内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_NoCacheMemPerc）和 Apache 文件系统容量使用率（OSLinux-OSLinux_FILESYSTEM_-apache_FSCapacity）"
+    dataset = "Telecom"
+
+    ### bank
+    # query = "对apache01的指标配置异常检测方案 CPU 利用率（OSLinux-CPU_CPU_CPUCpuUtil）、内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_MEMUsedMemPerc）、非缓存内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_NoCacheMemPerc）和 Apache 文件系统容量使用率（OSLinux-OSLinux_FILESYSTEM_-apache_FSCapacity）"
+    
+    ### telecom
+    # query = "对redis_009的指标配置异常检测方案 "
+    query = "level,reason,component,timestamp,datetime service,db close,db_007,1590256020,2020-05-24 01:47:00,对于那些指标制定合理的异常检测方案，能够发现告警该问题"
 
     run_single_query(query, dataset, output_path)
