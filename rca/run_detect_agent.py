@@ -271,5 +271,6 @@ if __name__ == "__main__":
 
     output_path = "/data/NAB/OpenRCA/test"
     dataset = "Bank"
-    query = "对apache01的指标配置异常检测方案"
+    query = "对apache01的指标配置异常检测方案 CPU 利用率（OSLinux-CPU_CPU_CPUCpuUtil）、内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_MEMUsedMemPerc）、非缓存内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_NoCacheMemPerc）和 Apache 文件系统容量使用率（OSLinux-OSLinux_FILESYSTEM_-apache_FSCapacity）"
+
     run_single_query(query, dataset, output_path)
