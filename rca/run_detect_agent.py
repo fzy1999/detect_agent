@@ -277,6 +277,10 @@ if __name__ == "__main__":
     
     ### telecom
     # query = "对redis_009的指标配置异常检测方案 "
-    query = "level,reason,component,timestamp,datetime service,db close,db_007,1590256020,2020-05-24 01:47:00,对于那些指标制定合理的异常检测方案，能够发现告警该问题"
+    # query = "level,reason,component,timestamp,datetime service,db close,db_007,1590256020,2020-05-24 01:47:00,对于那些指标制定合理的异常检测方案，能够发现告警该问题"
+    # query = "监控所有容器的CPU、内存使用，以及是否存活"
+    # query = "监控所有物理机/虚拟机的CPU、内存、磁盘、网络基础状态"
+    # query = " 监控数据库服务的可用性、连接数、基本性能"
+    query = "监控关键中间件（如Redis）的连接数、队列等"
 
     run_single_query(query, dataset, output_path)
