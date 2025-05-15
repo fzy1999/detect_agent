@@ -22,6 +22,7 @@ format = """```python
 ```"""
 
 summary = """代码执行成功。执行结果如下所示：
+具体异常检测算法和规则的python代码总结出来
 
 {result}
 
