@@ -1,4 +1,4 @@
 SOURCE:   "AI"
-MODEL:    "grok-3-beta"
+MODEL:    "grok-3-fast-beta"
 API_KEY:  "xai-vxEMbEdnVIEpIVEJuhXD0QG4xU2cvYNVLJWdfyRub9JgsxkSvsN4zOr1fMDJKANqZ8sYdcvtKsQcgrST"
 API_BASE: "https://docx.vercel.app/xai/v1/"

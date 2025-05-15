@@ -41,7 +41,7 @@ def index():
 @app.route('/run_query', methods=['POST'])
 def run_query():
     query = request.form.get('query')
-    dataset = request.form.get('dataset', 'Telecom')  # 默认为Telecom
+    dataset = 'Telecom'  # 固定使用Telecom数据集
     
     # 清空之前的日志队列和结果
     while not log_queue.empty():
@@ -62,17 +62,17 @@ def run_query():
             # 运行查询
             run_single_query(query, dataset, output_path)
             
-            # 获取结果（假设结果在trajectory.ipynb中的最后一个单元格）
+            # 获取结果（从prompt.json的最后一个响应中获取）
             latest_output_dir = get_latest_output_dir(output_path)
             if latest_output_dir:
                 try:
-                    with open(os.path.join(latest_output_dir, "trajectory.ipynb"), 'r', encoding='utf-8') as f:
-                        notebook = json.load(f)
-                        if notebook and 'cells' in notebook and len(notebook['cells']) > 0:
-                            # 获取最后一个Markdown单元格的内容
-                            for cell in reversed(notebook['cells']):
-                                if cell['cell_type'] == 'markdown':
-                                    result = cell['source'].replace('```', '').strip()
+                    with open(os.path.join(latest_output_dir, "prompt.json"), 'r', encoding='utf-8') as f:
+                        prompt_data = json.load(f)
+                        if prompt_data and 'messages' in prompt_data and len(prompt_data['messages']) > 0:
+                            # 获取最后一个assistant的响应
+                            for message in reversed(prompt_data['messages']):
+                                if message['role'] == 'assistant':
+                                    result = message['content'].strip()
                                     result_dict["result"] = result
                                     break
                 except Exception as e:
@@ -115,7 +115,7 @@ def stream_logs():
                 yield f"data: {json.dumps({'log': log})}\n\n"
             else:
                 time.sleep(0.1)
-                
+               
     return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/get_result')
