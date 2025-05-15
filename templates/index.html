@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>异常检测代理</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        .query-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .dataset-select {
+            margin-top: 10px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .submit-btn {
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            transition: background-color 0.3s;
+        }
+
+        .submit-btn:hover {
+            background-color: #1565c0;
+        }
+
+        .submit-btn:disabled {
+            background-color: #b0bec5;
+            cursor: not-allowed;
+        }
+
+        .section {
+            margin-top: 30px;
+        }
+
+        .section-title {
+            margin-bottom: 10px;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .log-container {
+            height: 300px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+
+        .result-container {
+            min-height: 100px;
+            background-color: #f0f4f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            color: #1e88e5;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .loader::after {
+            content: " ";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin: 0 5px;
+            border-radius: 50%;
+            border: 2px solid #1e88e5;
+            border-color: #1e88e5 transparent #1e88e5 transparent;
+            animation: loader 1.2s linear infinite;
+        }
+
+        @keyframes loader {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>异常检测代理</h1>
+
+        <div class="input-section">
+            <div>
+                <label for="query">输入执行任务：</label>
+                <textarea id="query" class="query-input" rows="4"
+                    placeholder="例如：监控数据库服务的指标 db_007 （CPU_Used_Pct、MEM_Used_Pct、Tbs_Used_Pct）配置异常检测算法"></textarea>
+            </div>
+            <div style="margin-top: 10px;">
+                <label for="dataset">选择数据集：</label>
+                <select id="dataset" class="dataset-select">
+                    <option value="Telecom" selected>Telecom</option>
+                    <option value="Bank">Bank</option>
+                </select>
+            </div>
+            <button id="submit-btn" class="submit-btn">开始分析</button>
+            <div id="loader" class="loader"></div>
+            <div id="status" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">日志输出</h2>
+            <div id="log-container" class="log-container"></div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">分析结果</h2>
+            <div id="result-container" class="result-container">等待执行...</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const queryInput = document.getElementById('query');
+            const datasetSelect = document.getElementById('dataset');
+            const submitBtn = document.getElementById('submit-btn');
+            const statusElement = document.getElementById('status');
+            const logContainer = document.getElementById('log-container');
+            const resultContainer = document.getElementById('result-container');
+            const loader = document.getElementById('loader');
+
+            let resultCheckInterval;
+            let eventSource;
+
+            // 设置默认查询
+            queryInput.value = "监控数据库服务的指标 db_007 （CPU_Used_Pct、MEM_Used_Pct、Tbs_Used_Pct）配置异常检测算法";
+
+            submitBtn.addEventListener('click', function () {
+                const query = queryInput.value.trim();
+                if (!query) {
+                    alert('请输入查询内容');
+                    return;
+                }
+
+                // 清空之前的日志和结果
+                logContainer.textContent = '';
+                resultContainer.textContent = '处理中...';
+
+                // 禁用提交按钮并显示加载器
+                submitBtn.disabled = true;
+                loader.style.display = 'block';
+                statusElement.textContent = '正在处理查询...';
+
+                // 创建表单数据
+                const formData = new FormData();
+                formData.append('query', query);
+                formData.append('dataset', datasetSelect.value);
+
+                // 发送请求
+                fetch('/run_query', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'started') {
+                            // 开始流式获取日志
+                            if (eventSource) {
+                                eventSource.close();
+                            }
+
+                            eventSource = new EventSource('/stream_logs');
+                            eventSource.onmessage = function (event) {
+                                const data = JSON.parse(event.data);
+                                const logElement = document.createElement('div');
+                                logElement.textContent = data.log;
+                                logContainer.appendChild(logElement);
+                                logContainer.scrollTop = logContainer.scrollHeight;
+                            };
+
+                            // 定时检查结果
+                            if (resultCheckInterval) {
+                                clearInterval(resultCheckInterval);
+                            }
+
+                            resultCheckInterval = setInterval(function () {
+                                fetch('/get_result')
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.result) {
+                                            resultContainer.textContent = data.result;
+                                            // 如果有结果，可以停止检查
+                                            clearInterval(resultCheckInterval);
+                                            submitBtn.disabled = false;
+                                            loader.style.display = 'none';
+                                            statusElement.textContent = '分析完成';
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('获取结果出错:', error);
+                                    });
+                            }, 2000); // 每2秒检查一次
+                        }
+                    })
+                    .catch(error => {
+                        console.error('提交查询出错:', error);
+                        statusElement.textContent = '提交出错，请重试';
+                        submitBtn.disabled = false;
+                        loader.style.display = 'none';
+                    });
+            });
+        });
+    </script>
+</body>
+
+</html>
