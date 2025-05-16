@@ -123,4 +123,4 @@ def get_result():
     return jsonify({"result": result_dict["result"]})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+    app.run(host='0.0.0.0', port=5080, debug=True, threaded=True)

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>异常检测代理</title>
+    <title>异常检测与告警配置Agent</title>
     <style>
         body {
             font-family: "Microsoft YaHei", sans-serif;
@@ -60,6 +60,39 @@
         .submit-btn:disabled {
             background-color: #b0bec5;
             cursor: not-allowed;
+        }
+
+        .example-queries {
+            margin-top: 15px;
+            background-color: #f0f4f8;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .example-queries h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #455a64;
+            font-size: 14px;
+        }
+
+        .example-btn {
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            color: #1565c0;
+            margin: 4px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .example-btn:hover {
+            background-color: #bbdefb;
+            border-color: #1e88e5;
         }
 
         .section {
@@ -208,7 +241,7 @@
 
 <body>
     <div class="container">
-        <h1>异常检测代理</h1>
+        <h1>异常检测与告警配置Agent</h1>
 
         <div class="dataset-info">
             <h3>关于Telecom数据集</h3>
@@ -221,6 +254,17 @@
                 <label for="query">输入执行任务：</label>
                 <textarea id="query" class="query-input" rows="4"
                     placeholder="例如：监控数据库服务的指标 db_007 （CPU_Used_Pct、MEM_Used_Pct、Tbs_Used_Pct）配置异常检测算法"></textarea>
+            </div>
+            <div class="example-queries">
+                <h4>常用案例：</h4>
+                <button class="example-btn"
+                    data-query="监控数据库服务的指标 db_007 （CPU_Used_Pct、MEM_Used_Pct、Tbs_Used_Pct）配置异常检测算法">数据库指标监控</button>
+                <button class="example-btn" data-query="请为redis_009的指标数据配置合适的异常检测算法，以便及时发现性能问题">Redis指标异常检测</button>
+                <button class="example-btn" data-query="请分析容器CPU、内存使用率和存活状态指标，并配置相应的异常检测规则">容器指标异常检测</button>
+                <button class="example-btn" data-query="请为物理机/虚拟机的CPU、内存、磁盘、网络指标设计异常检测方案，提高系统可靠性">主机指标异常检测</button>
+                <button class="example-btn" data-query="请针对Redis中间件的连接数、队列长度等关键指标，制定异常检测规则和阈值">中间件指标异常检测</button>
+                <button class="example-btn"
+                    data-query="level,reason,component,timestamp,datetime service,db close,db_007,1590256020,2020-05-24 01:47:00,对于哪些指标制定合理的异常检测方案，能够发现该数据库问题">特定故障分析</button>
             </div>
             <button id="submit-btn" class="submit-btn">开始分析</button>
             <div id="loader" class="loader"></div>
@@ -297,6 +341,18 @@ osb_001,1586534400000,0.333,1,1,1.0</pre>
             const logContainer = document.getElementById('log-container');
             const resultContainer = document.getElementById('result-container');
             const loader = document.getElementById('loader');
+            const exampleBtns = document.querySelectorAll('.example-btn');
+
+            // 示例查询按钮事件
+            exampleBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    queryInput.value = this.getAttribute('data-query');
+                    // 滚动到输入框位置
+                    queryInput.scrollIntoView({ behavior: 'smooth' });
+                    // 聚焦输入框
+                    queryInput.focus();
+                });
+            });
 
             // 弹窗相关元素
             const detailLink = document.getElementById('show-details');
@@ -390,7 +446,7 @@ osb_001,1586534400000,0.333,1,1,1.0</pre>
                                     .catch(error => {
                                         console.error('获取结果出错:', error);
                                     });
-                            }, 2000); // 每2秒检查一次
+                            }, 1000); // 每2秒检查一次
                         }
                     })
                     .catch(error => {
