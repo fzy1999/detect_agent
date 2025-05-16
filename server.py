@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 # 存储日志的队列和结果
 log_queue = queue.Queue()
-result_dict = {"result": ""}
+result_dict = {"result": "", "trace_id": ""}
 
 # 创建日志拦截器类
 class LogInterceptor:
@@ -47,10 +47,14 @@ def run_query():
     while not log_queue.empty():
         log_queue.get()
     result_dict["result"] = ""
+    result_dict["trace_id"] = ""
     
     # 创建输出目录
     output_path = os.path.join(project_root, "static", "output")
     os.makedirs(output_path, exist_ok=True)
+    
+    # 定义trace_id变量
+    trace_id = ""
     
     # 启动一个线程来执行查询
     def run_task():
@@ -60,7 +64,10 @@ def run_query():
         
         try:
             # 运行查询
-            run_single_query(query, dataset, output_path)
+            nonlocal trace_id  # 引用外部变量
+            trace_id = run_single_query(query, dataset, output_path)
+            # 保存trace_id
+            result_dict["trace_id"] = trace_id
             
             # 获取结果（从prompt.json的最后一个响应中获取）
             latest_output_dir = get_latest_output_dir(output_path)
@@ -88,7 +95,7 @@ def run_query():
     thread.daemon = True
     thread.start()
     
-    return jsonify({"status": "started"})
+    return jsonify({"status": "started", "trace_id": trace_id})
 
 def get_latest_output_dir(output_path):
     # 获取最新创建的输出目录
@@ -120,7 +127,7 @@ def stream_logs():
 
 @app.route('/get_result')
 def get_result():
-    return jsonify({"result": result_dict["result"]})
+    return jsonify({"result": result_dict["result"], "trace_id": result_dict["trace_id"]})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5080, debug=True, threaded=True)

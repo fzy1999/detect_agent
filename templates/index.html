@@ -135,6 +135,26 @@
             color: #1e88e5;
         }
 
+        .langfuse-link {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .langfuse-link a {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #4caf50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .langfuse-link a:hover {
+            background-color: #388e3c;
+        }
+
         .loader {
             display: none;
             text-align: center;
@@ -278,6 +298,9 @@
 
         <div class="section">
             <h2 class="section-title">分析结果</h2>
+            <div id="langfuse-link-container" class="langfuse-link" style="display: none;">
+                <a id="langfuse-link" href="#" target="_blank">查看详细追踪记录</a>
+            </div>
             <div id="result-container" class="result-container">等待执行...</div>
         </div>
     </div>
@@ -340,6 +363,8 @@ osb_001,1586534400000,0.333,1,1,1.0</pre>
             const statusElement = document.getElementById('status');
             const logContainer = document.getElementById('log-container');
             const resultContainer = document.getElementById('result-container');
+            const langfuseLinkContainer = document.getElementById('langfuse-link-container');
+            const langfuseLink = document.getElementById('langfuse-link');
             const loader = document.getElementById('loader');
             const exampleBtns = document.querySelectorAll('.example-btn');
 
@@ -392,6 +417,7 @@ osb_001,1586534400000,0.333,1,1,1.0</pre>
                 // 清空之前的日志和结果
                 logContainer.textContent = '';
                 resultContainer.textContent = '处理中...';
+                langfuseLinkContainer.style.display = 'none';
 
                 // 禁用提交按钮并显示加载器
                 submitBtn.disabled = true;
@@ -441,6 +467,13 @@ osb_001,1586534400000,0.333,1,1,1.0</pre>
                                             submitBtn.disabled = false;
                                             loader.style.display = 'none';
                                             statusElement.textContent = '分析完成';
+
+                                            // 如果有trace_id，显示Langfuse链接
+                                            if (data.trace_id) {
+                                                const langfuseUrl = `http://9.134.214.7:8080/project/cm8xyjbrb0006nk07xgjexc6q/traces/${data.trace_id}`;
+                                                langfuseLink.href = langfuseUrl;
+                                                langfuseLinkContainer.style.display = 'block';
+                                            }
                                         }
                                     })
                                     .catch(error => {

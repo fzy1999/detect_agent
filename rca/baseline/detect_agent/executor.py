@@ -43,7 +43,7 @@ rule = """## Python代码编写规则：
 5. 不要模拟任何虚拟情况或假设未知内容。解决真实问题。
 6. 不要将任何数据存储为磁盘上的文件。只能将数据作为变量缓存到内存中。
 7. 不要通过Python可视化数据或绘制图片或图表。您只能提供基于文本的结果。代码中绝不包含`matplotlib`或`seaborn`库。
-8. 除非指令明确要求‘使用简洁的中文’，否则不要生成除Python代码块之外的任何内容。如果您发现输入指令是总结任务（通常发生在最后一步），您应该在代码中将结论综合总结为字符串并直接显示。
+8. 除非指令明确要求'使用简洁的中文'，否则不要生成除Python代码块之外的任何内容。如果您发现输入指令是总结任务（通常发生在最后一步），您应该在代码中将结论综合总结为字符串并直接显示。
 9. 不要在给定时间段内过滤数据后再计算阈值。始终在过滤给定时间段数据之前，使用指标文件中特定组件的整个KPI系列计算全局阈值。
 10. 所有问题均使用**UTC+8**时间。然而，本地机器的默认时区未知。请使用`pytz.timezone('Asia/Shanghai')`明确将时区设置为UTC+8。
 """
@@ -92,7 +92,7 @@ rule_en = """## RULES OF PYTHON CODE WRITING:
 10. All issues use **UTC+8** time. However, the local machine's default timezone is unknown. Please use `pytz.timezone('Asia/Shanghai')` to explicityly set the timezone to UTC+8.
 """
 
-def execute_act(instruction:str, background:str, history, attempt, kernel, logger) -> str:
+def execute_act(instruction:str, background:str, history, attempt, kernel, logger, langfuse_trace=None, step_id=None) -> str:
 
     logger.debug("Start execution")
     t1 = datetime.now()
@@ -109,35 +109,76 @@ def execute_act(instruction:str, background:str, history, attempt, kernel, logge
     prompt = history.copy()
     note = [{'role': 'user', 'content': f"Continue your code writing process following the rules:\n\n{rule}\n\nResponse format:\n\n{format}"}]
     tokenizer = tiktoken.encoding_for_model("gpt-4")
+    
     for i in range(2):
         try:
+            # 创建langfuse跟踪
+            if langfuse_trace:
+                Code_generation_llm_generation = langfuse_trace.generation(
+                    name=f"Code_Generation" if not retry_flag else f"Code_Generation_Retry",
+                    input=prompt + note if retry_flag else prompt
+                )
+                
             if not retry_flag:
                 response = get_chat_completion(
                     messages=prompt + note,
                 )
             else:
                 response = get_chat_completion(
-                    messages=prompt,
+                    messages=prompt
                 )
                 retry_flag = False
+                
+            # 记录生成的代码
+            if langfuse_trace:
+                Code_generation_llm_generation.end(output=response)
+                
             if re.search(code_pattern, response):
                 code = re.search(code_pattern, response).group(1).strip()
             else:
                 code = response.strip()
             logger.debug(f"Raw Code:\n{code}")
+            
             if "import matplotlib" in code or "import seaborn" in code:
                 logger.warning("The generated visualization code detected.")
                 prompt.append({'role': 'assistant', 'content': code})
                 prompt.append({'role': 'user', 'content': "You are not permitted to generate visualizations. If the instruction requires visualization, please provide the text-based results."})
+                
+                if langfuse_trace:
+                    generation_span.end(
+                        output="Visualization code detected and rejected",
+                        status="error"
+                    )
                 continue
+                
+            # 创建执行跟踪
+            if langfuse_trace:
+                execution_span = langfuse_trace.span(
+                    name=f"Code_Execution",
+                    input=code
+                )
+                
             exec = kernel.run_cell(code)
             status = exec.success
+            
             if status:
                 result = str(exec.result).strip()
                 tokens_len = len(tokenizer.encode(result))
+                
                 if tokens_len > 16384:
                     logger.warning(f"Token length exceeds the limit: {tokens_len}")
+                    
+                    if langfuse_trace:
+                        execution_span.end(
+                            output="Token length exceeded",
+                            status="error"
+                        )
+                        generation_span.end(
+                            output="Token length exceeded",
+                            status="error"
+                        )
                     continue
+                    
                 t2 = datetime.now()
                 row_pattern = r"\[(\d+)\s+rows\s+x\s+\d+\s+columns\]"
                 match = re.search(row_pattern, result)
@@ -147,13 +188,37 @@ def execute_act(instruction:str, background:str, history, attempt, kernel, logge
                         result += f"\n\n**Note**: The printed pandas DataFrame is truncated due to its size. Only **10 rows** are displayed, which may introduce observation bias due to the incomplete table. If you want to comprehensively understand the details without bias, please ask Executor using `df.head(X)` to display more rows."
                 logger.debug(f"Execution Result:\n{result}")
                 logger.debug(f"Execution finished. Time cost: {t2-t1}")
+                
+                # 记录执行结果
+                if langfuse_trace:
+                    execution_span.end(
+                        output=result,
+                        status="success",
+                        metadata={
+                            "execution_time": (t2-t1).total_seconds()
+                        }
+                    )
+                
                 history.extend([
                     {'role': 'assistant', 'content': code},
                     {'role': 'user', 'content': summary.format(result=result)},
                 ])
+                
+                # 创建总结跟踪
+                if langfuse_trace:
+                    summary_llm_generation = langfuse_trace.generation(
+                        name=f"Executor_Summary",
+                        input=history
+                    )
+                
                 answer = get_chat_completion(
                     messages=history,
                 )
+                
+                # 记录总结结果
+                if langfuse_trace:
+                    summary_llm_generation.end(output=answer)
+                
                 logger.debug(f"Brief Answer:\n{answer}")
                 history.extend([
                     {'role': 'assistant', 'content': answer},
@@ -166,12 +231,44 @@ def execute_act(instruction:str, background:str, history, attempt, kernel, logge
                 t2 = datetime.now()
                 logger.warning(f"Execution failed. Error message: {result}")
                 logger.debug(f"Execution finished. Time cost: {t2-t1}")
+                
+                # 记录执行失败
+                if langfuse_trace:
+                    execution_span.end(
+                        output=result,
+                        status="error",
+                        metadata={
+                            "execution_time": (t2-t1).total_seconds()
+                        }
+                    )
+                
                 prompt.append({'role': 'assistant', 'content': code})
                 prompt.append({'role': 'user', 'content': f"Execution failed:\n{result}\nPlease revise your code and retry."})
                 retry_flag = True
+                
+                # 结束本次生成跟踪
+                if langfuse_trace:
+                    generation_span.end(
+                        output=f"Execution failed: {result}",
+                        status="error"
+                    )
             
         except Exception as e:
             logger.error(e)
+            
+            # 记录异常
+            if langfuse_trace:
+                if 'execution_span' in locals():
+                    execution_span.end(
+                        output=str(e),
+                        status="error"
+                    )
+                if 'generation_span' in locals():
+                    generation_span.end(
+                        output=str(e),
+                        status="error"
+                    )
+            
             time.sleep(1)
     
     t2 = datetime.now()

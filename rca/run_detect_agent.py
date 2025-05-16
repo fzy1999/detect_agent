@@ -204,28 +204,15 @@ def run_single_query(query, dataset,output_path):
     
     print(f"obs_path: {obs_path}")
     
-    trace  = langfuse.trace(
-            name="Detect_Agent",
-            input= query,
-            metadata={
-                "model": configs['MODEL'].split('/')[-1],
-                "agent_prompt": ap.rules,
-                "background_prompt": bp.cand
-            }
-        )
+
 
     agent = Detect_Agent(ap, bp)
-    prediction, trajectory, prompt = agent.run(query, 
+    prediction, trajectory, prompt, trace_id = agent.run(query, 
                                             logger, 
                                             max_step=25, 
                                             max_turn=5)
 
-    trace.update(
-        output=prompt,
-        metadata={
-            "model": configs['MODEL'].split('/')[-1],
-        }
-    )
+
     for step in trajectory:
         code_cell = nbf.new_code_cell(step['code'])
         result_cell = nbf.new_markdown_cell(f"```\n{step['result']}\n```")
@@ -239,7 +226,7 @@ def run_single_query(query, dataset,output_path):
         json.dump({"messages": prompt}, f, ensure_ascii=False, indent=4)
     logger.info(f"Prompt has been saved to {promptfile}")
     
-
+    return trace_id
 
 
 
