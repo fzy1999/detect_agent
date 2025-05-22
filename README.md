@@ -14,6 +14,7 @@ The Intelligent Anomaly Detection Configuration Agent is a project designed to a
 *   **Langfuse Integration:** Detailed tracing of the agent's operations is available through integration with Langfuse.
 *   **Web Interface:** A user-friendly web interface allows for easy interaction with the agent.
 *   **Command-Line Interface (CLI):** A CLI is available for direct execution and scripting of agent tasks.
+*   **Chart Generation for Visualization:** The agent can generate plots (e.g., time series trends, anomaly highlights) during its analysis, which are saved as image files.
 
 ## How it Works (Architecture)
 
@@ -22,12 +23,12 @@ The system is composed of several key components that interact to provide an aut
 *   **Flask Web Server (`server.py`):** This is the main entry point for user interaction. It serves the web interface, receives user queries in natural language, and orchestrates the communication flow with the `Detection Agent`.
 *   **Detection Agent (`agent/` directory):** This is the core of the intelligent configuration system.
     *   **`Detect_Agent` class:** Acts as the primary interface to the agent's functionalities. It initializes and manages the different parts of the agent.
-    *   **`controller.py`:** Implements the central control loop. It utilizes a Large Language Model (LLM), referred to as the Controller, which iteratively guides the anomaly detection configuration process. The Controller makes decisions based on user input, dataset characteristics, and its internal knowledge.
-    *   **`executor.py`:** This component receives natural language instructions (e.g., "analyze column X for outliers") from the Controller. It translates these instructions into executable Python code, primarily leveraging the `pandas` library for data analysis, and then runs this code.
+    *   **`controller.py`:** Implements the central control loop. It utilizes a Large Language Model (LLM), referred to as the Controller, which iteratively guides the anomaly detection configuration process. The Controller makes decisions based on user input, dataset characteristics, and its internal knowledge. The `plot_output_path` (derived from the overall `obs_path` for the execution run) is made available within the execution kernel (IPython environment used by the executor), allowing generated plots to be saved to a consistent location.
+    *   **`executor.py`:** This component receives natural language instructions (e.g., "analyze column X for outliers" or "plot the CPU utilization for host Y") from the Controller. It translates these instructions into executable Python code, primarily leveraging the `pandas` library for data analysis. The Executor can now also generate plots using libraries like Matplotlib or Seaborn and save them as image files to the designated `plot_output_path`.
     *   **Prompting System:** The behavior and knowledge of the LLM Controller are shaped by a structured prompting system:
-        *   `agent_prompt.py`: Defines general rules, strategies, and constraints applicable to anomaly detection tasks. This provides the Controller with a foundational understanding of how to approach these problems.
+        *   `agent_prompt.py`: Defines general rules, strategies, and constraints applicable to anomaly detection tasks. This includes guidelines on when and how to generate charts for visualization. The agent's prompting rules have been updated to allow and guide chart generation.
         *   Dataset-specific prompts (e.g., `basic_prompt_Telecom.py`, `basic_prompt_Bank.py`): These files contain specialized information for different datasets. This includes data schemas (column names, types), lists of candidate root causes for anomalies common in that domain (e.g., network failures in Telecom, fraudulent transactions in Banking), and other contextual details that help the Controller generate more relevant and effective configurations.
-*   **Langfuse Integration:** The system is integrated with Langfuse, a tracing and observability platform for LLM applications. This allows for detailed logging of the agent's execution, including every interaction with the LLM (prompts and responses), the Python code generated and executed by the `executor.py`, and the intermediate results. This is invaluable for debugging, understanding the agent's decision-making process, and evaluating its performance.
+*   **Langfuse Integration:** The system is integrated with Langfuse, a tracing and observability platform for LLM applications. This allows for detailed logging of the agent's execution, including every interaction with the LLM (prompts and responses), the Python code generated and executed by the `executor.py` (including code for plotting), and the intermediate results. This is invaluable for debugging, understanding the agent's decision-making process, and evaluating its performance.
 *   **Data Handling:** The agent is designed to process telemetry data, which can include metrics and traces. This data is expected to be in CSV format. Typically, datasets are organized by their specific domain (e.g., Telecom, Banking) and further subdivided by date.
 
 ## Project Structure
@@ -81,6 +82,7 @@ There are two main ways to run the agent:
         ```
     *   Once the server is running, open your web browser and navigate to `http://localhost:5079` (or `http://0.0.0.0:5079` if accessing from another machine on the network).
     *   You can then input your anomaly detection requirements in natural language through the web interface.
+    *   **Viewing Generated Charts:** The web interface now includes a dedicated 'Charts' area. After a query is completed, if any charts were generated during the analysis, a list of available plot filenames will appear below the main result. Clicking on a plot name from this list will display the corresponding image directly on the page.
 *   **2. Running via Command-Line (for single queries/advanced use):**
     *   For more direct execution, scripting, or advanced use cases, you can run the agent using the `agent/run_detect_agent.py` script.
     *   Here's an example command structure:
@@ -110,6 +112,7 @@ There are two main ways to run the agent:
         *   The Python code generated and executed by the Executor at each step.
         *   The results/observations from each code execution.
     *   **Prompt Log:** A JSON file (e.g., `prompt.json`) also saved in the output directory, logging the full interaction history with the LLM.
+    *   **Plot Images:** If charts are generated during the analysis, they are saved as image files (e.g., PNG) in a `plot` subdirectory within the specific execution's output path (i.e., `{output_path}/{model}/{date}/plot/filename.png`). The filenames of these generated plots are also listed in the final JSON output from the agent under the `generated_plots` key.
     *   **Langfuse Trace URL:** If Langfuse is configured, the `trace_id` (returned by the agent's execution functions and used by the server) can be used to construct a direct URL to view the execution trace in the Langfuse UI (e.g., `YOUR_LANGFUSE_HOST/trace/TRACE_ID`). The `trace_id` is also logged by `server.py` when a query is run.
 
 ## Extending the Agent

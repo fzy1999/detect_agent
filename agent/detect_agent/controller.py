@@ -37,27 +37,27 @@ summary = """现在，您已决定结束推理过程。您应该为问题提供�
 请回忆问题为：{objective}
 
 
-请首先回顾您之前的推理过程，以推断出问题的确切答案。然后，在回复的末尾使用以下JSON格式总结您的最终答案,有多少个需要配置异常检测指标就有多少个：
+请首先回顾您之前的推理过程，以推断出问题的确切答案。如果在分析过程中生成并保存了任何图表，请在最终答案的JSON对象中，使用 `generated_plots` 字段列出所有这些图表的相对于 `plot` 目录的文件名 (例如, `["图表1.png", "图表2.png"])`。然后，在回复的末尾使用以下JSON格式总结您的最终答案,有多少个需要配置异常检测指标就有多少个：
 
 ```json
 {{
     "1": {{
-        "组件层级或者名称": ,
-        "指标名称": ,
-        "指标描述": ,
-        "指标类型": ,
-        "指标异常检测方案": ,
-        "异常检测方案的原因": ,
-    }}, (必须)
+        "组件层级或者名称": "...",
+        "指标名称": "...",
+        "指标描述": "...",
+        "指标类型": "...",
+        "指标异常检测方案": "...",
+        "异常检测方案的原因": "..."
+    }},
     "2": {{
-        "组件层级或者名称": ,
-        "指标名称": ,
-        "指标描述": ,
-        "指标类型": ,
-        "指标异常检测方案": ,
-        "异常检测方案的原因": ,
-    }}，
-    "3"....
+        "组件层级或者名称": "...",
+        "指标名称": "...",
+        "指标描述": "...",
+        "指标类型": "...",
+        "指标异常检测方案": "...",
+        "异常检测方案的原因": "..."
+    }},
+    "generated_plots": ["示例图表1.png", "示例图表2.png"]
 }}
 ```
 (请使用"json"和""标签包裹JSON对象。您只需提供问题要求的内容，其他字段在JSON中省略。)
@@ -117,7 +117,7 @@ Please first review your previous reasoning process to infer an exact answer of 
 Note that all the root cause components and reasons must be selected from the provided candidates. Do not reply 'unknown' or 'null' or 'not found' in the JSON. Do not be too conservative in selecting the root cause components and reasons. Be decisive to infer a possible answer based on your current observation."""
 
 
-def control_loop(objective:str, plan:str, ap, bp, logger, max_step = 15, max_turn = 3, langfuse_trace = None) -> str:
+def control_loop(objective:str, plan:str, ap, bp, logger, obs_path:str, max_step = 15, max_turn = 3, langfuse_trace = None) -> str:
    
     prompt = [
             {'role': 'system', 'content': system.format(objective=objective,
@@ -136,6 +136,12 @@ def control_loop(objective:str, plan:str, ap, bp, logger, max_step = 15, max_tur
             "pd.set_option('display.width', 427)\n"+ \
             "pd.set_option('display.max_columns', 10)\n"
     kernel.run_cell(init_code)
+
+    # Define obs_path and plot_output_path in the kernel and create the plot directory
+    plot_setup_code = f"import os\nobs_path = r'{obs_path}'\nplot_output_path = os.path.join(obs_path, 'plot')\nos.makedirs(plot_output_path, exist_ok=True)"
+    kernel.run_cell(plot_setup_code)
+    logger.info(f"Plots will be saved to: {kernel.user_ns['plot_output_path']}")
+
 
     for step in range(max_step):
         

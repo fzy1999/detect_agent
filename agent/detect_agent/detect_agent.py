@@ -7,7 +7,7 @@ class Detect_Agent:
         self.ap = agent_prompt
         self.bp = basic_prompt
 
-    def run(self, instruction, logger, max_step=25, max_turn=5):
+    def run(self, instruction, logger, obs_path, max_step=25, max_turn=5):
             
         logger.info(f"Objective: {instruction}")
         
@@ -20,18 +20,20 @@ class Detect_Agent:
             input=instruction,
             metadata={
                 "agent_prompt": self.ap.rules,
-                "background_prompt": self.bp.cand
+                "background_prompt": self.bp.cand,
+                "obs_path": obs_path
             }
         )
         
         # 执行控制循环
         prediction, trajectory, prompt = control_loop(
-            instruction, 
-            "", 
-            self.ap, 
-            self.bp, 
-            logger=logger, 
-            max_step=max_step, 
+            instruction,
+            "",
+            self.ap,
+            self.bp,
+            logger=logger,
+            obs_path=obs_path,
+            max_step=max_step,
             max_turn=max_turn,
             langfuse_trace=trace  # 传递trace对象
         )
@@ -46,4 +48,4 @@ class Detect_Agent:
         
         logger.info(f"Result: {prediction}")
 
-        return prediction, trajectory, prompt,trace.id
+        return prediction, trajectory, prompt, trace.id, obs_path

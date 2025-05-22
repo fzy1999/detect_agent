@@ -60,10 +60,11 @@ def run_single_query(query, dataset,output_path):
 
 
     agent = Detect_Agent(ap, bp)
-    prediction, trajectory, prompt, trace_id = agent.run(query, 
-                                            logger, 
-                                            max_step=25, 
-                                            max_turn=5)
+    prediction, trajectory, prompt, trace_id, returned_obs_path = agent.run(query,
+                                                                          logger,
+                                                                          obs_path,
+                                                                          max_step=25,
+                                                                          max_turn=5)
 
 
     for step in trajectory:
@@ -79,7 +80,7 @@ def run_single_query(query, dataset,output_path):
         json.dump({"messages": prompt}, f, ensure_ascii=False, indent=4)
     logger.info(f"Prompt has been saved to {promptfile}")
     
-    return trace_id
+    return trace_id, returned_obs_path
 
 
 

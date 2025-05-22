@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 # 存储日志的队列和结果
 log_queue = queue.Queue()
-result_dict = {"result": "", "trace_id": ""}
+result_dict = {"result": "", "trace_id": "", "plots": [], "obs_path": ""}
 
 # 创建日志拦截器类
 class LogInterceptor:
@@ -48,13 +48,15 @@ def run_query():
         log_queue.get()
     result_dict["result"] = ""
     result_dict["trace_id"] = ""
+    result_dict["plots"] = []
+    result_dict["obs_path"] = ""
     
     # 创建输出目录
     output_path = os.path.join(project_root, "static", "output")
     os.makedirs(output_path, exist_ok=True)
     
-    # 定义trace_id变量
-    trace_id = ""
+    # 定义trace_id和obs_path变量
+    # trace_id = "" # No longer needed here as it's set in run_task directly
     
     # 启动一个线程来执行查询
     def run_task():
@@ -64,26 +66,41 @@ def run_query():
         
         try:
             # 运行查询
-            nonlocal trace_id  # 引用外部变量
-            trace_id = run_single_query(query, dataset, output_path)
-            # 保存trace_id
-            result_dict["trace_id"] = trace_id
+            # nonlocal trace_id, obs_path # No longer needed due to direct assignment to result_dict
+            returned_trace_id, returned_obs_path = run_single_query(query, dataset, output_path)
+            # 保存trace_id和obs_path
+            result_dict["trace_id"] = returned_trace_id
+            result_dict["obs_path"] = returned_obs_path
             
             # 获取结果（从prompt.json的最后一个响应中获取）
-            latest_output_dir = get_latest_output_dir(output_path)
-            if latest_output_dir:
+            # latest_output_dir = get_latest_output_dir(output_path) # obs_path is now the direct path
+            if returned_obs_path:
                 try:
-                    with open(os.path.join(latest_output_dir, "prompt.json"), 'r', encoding='utf-8') as f:
+                    with open(os.path.join(returned_obs_path, "prompt.json"), 'r', encoding='utf-8') as f:
                         prompt_data = json.load(f)
                         if prompt_data and 'messages' in prompt_data and len(prompt_data['messages']) > 0:
                             # 获取最后一个assistant的响应
                             for message in reversed(prompt_data['messages']):
                                 if message['role'] == 'assistant':
-                                    result = message['content'].strip()
-                                    result_dict["result"] = result
+                                    raw_result_content = message['content'].strip()
+                                    # The raw_result_content is expected to be a JSON string
+                                    try:
+                                        final_answer_json = json.loads(raw_result_content)
+                                        result_dict["result"] = json.dumps(final_answer_json, ensure_ascii=False, indent=4) # Store pretty printed JSON
+                                        result_dict["plots"] = final_answer_json.get("generated_plots", [])
+                                    except json.JSONDecodeError as je:
+                                        # If it's not JSON, store as is, and log error for plots
+                                        result_dict["result"] = raw_result_content
+                                        result_dict["plots"] = []
+                                        log_queue.put(f"Error parsing final result JSON for plots: {str(je)}")
                                     break
                 except Exception as e:
                     result_dict["result"] = f"获取结果失败: {str(e)}"
+                    log_queue.put(f"Error reading prompt.json or processing result: {str(e)}")
+            else:
+                result_dict["result"] = "执行完成，但未返回观测路径。"
+                log_queue.put("Execution finished, but no observation path was returned.")
+
         except Exception as e:
             log_queue.put(f"Error: {str(e)}")
             result_dict["result"] = f"执行失败: {str(e)}"
@@ -95,7 +112,8 @@ def run_query():
     thread.daemon = True
     thread.start()
     
-    return jsonify({"status": "started", "trace_id": trace_id})
+    # Return initial status, trace_id will be updated by the thread and fetched by get_result
+    return jsonify({"status": "started"})
 
 def get_latest_output_dir(output_path):
     # 获取最新创建的输出目录
@@ -127,7 +145,40 @@ def stream_logs():
 
 @app.route('/get_result')
 def get_result():
-    return jsonify({"result": result_dict["result"], "trace_id": result_dict["trace_id"]})
+    return jsonify({
+        "result": result_dict.get("result"), 
+        "trace_id": result_dict.get("trace_id"),
+        "plots": result_dict.get("plots", []),
+        "obs_path": result_dict.get("obs_path")
+    })
+
+@app.route('/get_plots/<trace_id>')
+def get_plots(trace_id):
+    # Assuming result_dict holds the latest query's data and trace_id matches.
+    # For a multi-user or historical scenario, you'd need a better way to store/retrieve this.
+    if result_dict.get("trace_id") == trace_id:
+        return jsonify({"plots": result_dict.get("plots", [])})
+    return jsonify({"error": "Trace ID not found or no plots available"}), 404
+
+from flask import send_from_directory
+
+# ... (other app routes) ...
+
+@app.route('/get_plot_file/<trace_id>/<path:plot_filename>')
+def get_plot_file(trace_id, plot_filename):
+    if result_dict.get("trace_id") == trace_id and result_dict.get("obs_path"):
+        # obs_path is already absolute: project_root + "/static/output/model_name/timestamp"
+        plot_dir = os.path.join(result_dict["obs_path"], "plot")
+        # Security: Ensure plot_filename is just a filename and doesn't try to ../
+        if ".." in plot_filename or plot_filename.startswith("/"):
+            return "Invalid filename", 400
+        try:
+            # For send_from_directory, the directory path should be absolute.
+            # project_root is absolute. obs_path is derived from project_root. So it should be absolute.
+            return send_from_directory(plot_dir, plot_filename)
+        except FileNotFoundError:
+            return "Plot not found", 404
+    return jsonify({"error": "Trace ID not found or obs_path missing"}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5079, debug=True, threaded=True)

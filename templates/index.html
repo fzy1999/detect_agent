@@ -303,6 +303,20 @@
             </div>
             <div id="result-container" class="result-container">等待执行...</div>
         </div>
+
+        <div id="chartsArea" class="section" style="display:none;">
+            <h2 class="section-title">生成图表</h2>
+            <div style="display: flex; gap: 20px;">
+                <div style="width: 30%; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                    <h4>图表列表:</h4>
+                    <ul id="plotList" style="list-style-type: none; padding-left: 0;"></ul>
+                </div>
+                <div id="chartDisplay" style="width: 70%; border: 1px solid #ddd; padding: 10px; border-radius: 4px; text-align: center;">
+                     <p id="chartPlaceholder" style="margin-top: 20px; color: #777;">点击左侧列表中的图表名称以显示图像。</p>
+                    <img id="currentChartImage" src="" alt="Selected Chart" style="max-width: 100%; height: auto; display: none;"/>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 数据集详情弹窗 -->
@@ -403,9 +417,72 @@ osb_001,1586534400000,0.333,1,1,1.0</pre>
 
             let resultCheckInterval;
             let eventSource;
+            let currentTraceId = null; // Store current trace ID
 
             // 设置默认查询
             queryInput.value = "监控数据库服务的指标 db_007 （CPU_Used_Pct、MEM_Used_Pct、Tbs_Used_Pct）配置异常检测算法";
+
+            function fetchAndDisplayPlots(traceId) {
+                if (!traceId) return;
+
+                fetch(`/get_plots/${traceId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const plotListUl = document.getElementById('plotList');
+                        const chartsAreaDiv = document.getElementById('chartsArea');
+                        const chartDisplayDiv = document.getElementById('chartDisplay');
+                        const currentChartImage = document.getElementById('currentChartImage');
+                        const chartPlaceholder = document.getElementById('chartPlaceholder');
+
+                        plotListUl.innerHTML = ''; // Clear previous plots
+                        currentChartImage.src = ''; // Clear previous image
+                        currentChartImage.style.display = 'none'; // Hide image
+                        chartPlaceholder.style.display = 'block'; // Show placeholder
+
+
+                        if (data.plots && data.plots.length > 0) {
+                            data.plots.forEach(filename => {
+                                const listItem = document.createElement('li');
+                                const link = document.createElement('a');
+                                link.href = '#';
+                                link.textContent = filename;
+                                link.style.display = 'block';
+                                link.style.padding = '5px 0';
+                                link.style.textDecoration = 'none';
+                                link.style.color = '#1e88e5';
+                                link.onmouseover = function() { this.style.textDecoration = 'underline'; };
+                                link.onmouseout = function() { this.style.textDecoration = 'none'; };
+                                link.onclick = function(event) {
+                                    event.preventDefault();
+                                    displayPlot(traceId, filename);
+                                };
+                                listItem.appendChild(link);
+                                plotListUl.appendChild(listItem);
+                            });
+                            chartsAreaDiv.style.display = 'block'; // Show charts area
+                            if(data.plots.length > 0){ // Auto-display first plot if available
+                                displayPlot(traceId, data.plots[0]);
+                            }
+                        } else {
+                            chartsAreaDiv.style.display = 'none'; // Hide if no plots
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching plots:', error);
+                        document.getElementById('chartsArea').style.display = 'none';
+                    });
+            }
+
+            function displayPlot(traceId, plotFilename) {
+                const imageUrl = `/get_plot_file/${traceId}/${plotFilename}`;
+                const chartImageElem = document.getElementById('currentChartImage');
+                const chartPlaceholder = document.getElementById('chartPlaceholder');
+                
+                chartImageElem.src = imageUrl;
+                chartImageElem.style.display = 'block'; // Show the image
+                chartPlaceholder.style.display = 'none'; // Hide the placeholder
+            }
+
 
             submitBtn.addEventListener('click', function () {
                 const query = queryInput.value.trim();
@@ -418,6 +495,21 @@ osb_001,1586534400000,0.333,1,1,1.0</pre>
                 logContainer.textContent = '';
                 resultContainer.textContent = '处理中...';
                 langfuseLinkContainer.style.display = 'none';
+                currentTraceId = null; // Reset trace ID
+
+                // Hide charts area and clear plots for new query
+                const chartsAreaDiv = document.getElementById('chartsArea');
+                if (chartsAreaDiv) chartsAreaDiv.style.display = 'none';
+                const plotListUl = document.getElementById('plotList');
+                if (plotListUl) plotListUl.innerHTML = '';
+                const currentChartImage = document.getElementById('currentChartImage');
+                if (currentChartImage) {
+                    currentChartImage.src = '';
+                    currentChartImage.style.display = 'none';
+                }
+                const chartPlaceholder = document.getElementById('chartPlaceholder');
+                if(chartPlaceholder) chartPlaceholder.style.display = 'block';
+
 
                 // 禁用提交按钮并显示加载器
                 submitBtn.disabled = true;
@@ -437,6 +529,11 @@ osb_001,1586534400000,0.333,1,1,1.0</pre>
                     .then(response => response.json())
                     .then(data => {
                         if (data.status === 'started') {
+                            // The initial response from /run_query in server.py does not return trace_id anymore.
+                            // trace_id will be fetched via /get_result
+                            // statusElement.textContent = '查询已启动，Trace ID: ' + data.trace_id;
+                            // currentTraceId = data.trace_id; // Store trace_id
+
                             // 开始流式获取日志
                             if (eventSource) {
                                 eventSource.close();
@@ -460,26 +557,41 @@ osb_001,1586534400000,0.333,1,1,1.0</pre>
                                 fetch('/get_result')
                                     .then(response => response.json())
                                     .then(data => {
-                                        if (data.result) {
+                                        if (data.result) { // Check if 'result' field (final LLM output) is present
                                             resultContainer.textContent = data.result;
-                                            // 如果有结果，可以停止检查
                                             clearInterval(resultCheckInterval);
                                             submitBtn.disabled = false;
                                             loader.style.display = 'none';
                                             statusElement.textContent = '分析完成';
 
-                                            // 如果有trace_id，显示Langfuse链接
                                             if (data.trace_id) {
+                                                currentTraceId = data.trace_id; // Update trace_id from the final result
                                                 const langfuseUrl = `http://9.134.214.7:8080/project/cm8xyjbrb0006nk07xgjexc6q/traces/${data.trace_id}`;
                                                 langfuseLink.href = langfuseUrl;
                                                 langfuseLinkContainer.style.display = 'block';
+                                                
+                                                // Fetch and display plots now that we have the trace_id and results
+                                                fetchAndDisplayPlots(data.trace_id);
+                                            } else {
+                                                 // No trace_id, hide plots area
+                                                document.getElementById('chartsArea').style.display = 'none';
                                             }
+                                        } else if (data.trace_id && !currentTraceId) {
+                                            // If trace_id is available but result is not yet, update currentTraceId
+                                            // This might happen if /get_result returns trace_id before full result
+                                            currentTraceId = data.trace_id;
+                                            statusElement.textContent = '处理中... Trace ID: ' + currentTraceId;
                                         }
                                     })
                                     .catch(error => {
                                         console.error('获取结果出错:', error);
+                                        // Potentially stop interval if there's a persistent error
                                     });
-                            }, 1000); // 每2秒检查一次
+                            }, 1000); 
+                        } else {
+                            statusElement.textContent = '启动查询失败: ' + (data.error || '未知错误');
+                            submitBtn.disabled = false;
+                            loader.style.display = 'none';
                         }
                     })
                     .catch(error => {
