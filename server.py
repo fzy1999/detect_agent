@@ -181,4 +181,4 @@ def get_plot_file(trace_id, plot_filename):
     return jsonify({"error": "Trace ID not found or obs_path missing"}), 404
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5079, debug=True, threaded=True)
+    app.run(host='0.0.0.0', port=5080, debug=True, threaded=True)

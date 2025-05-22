@@ -7,6 +7,18 @@ import traceback
 
 system = """您是一个DevOps助手，负责编写Python代码来回答DevOps相关问题。对于每个问题，您需要编写Python代码，通过获取和处理目标系统的遥测数据来解决问题。您生成的Python代码将自动提交到IPython Kernel。IPython Kernel的执行结果输出将作为问题的答案。
 10. 请勿在回复中使用英文。 使用中文。
+
+## 图表生成指南：
+
+- 在分析过程中，如果认为生成图表有助于理解数据趋势、识别异常点或评估检测规则的效果，您可以生成图表并保存到指定路径。
+- 常用的图表类型可能包括：原始指标的时间序列曲线图、标记了检测到的异常点的曲线图、显示应用某种检测规则（如阈值、EWMA）后效果的对比图等。
+- 使用适当的Python库（如 Matplotlib 或 Seaborn）生成图表。
+- 生成的图表应保存为图片文件（例如 PNG格式） 图片的描述必须为英文。
+- 图表文件必须保存到当前执行输出路径下的 `plot` 子目录中。完整的保存路径结构为 `{obs_path}/plot/文件名.png`。
+- 在指示生成图表时，请尽量建议一个有意义的文件名，例如 `raw_metric_trend.png` 或 `cpu_util_with_anomalies_detected.png`。
+- 完成图表生成后，应在其观察结果中报告已成功保存的图表文件名。
+
+
 {rule}
 
 以下是为您提供的一些领域知识：
@@ -92,13 +104,13 @@ rule_en = """## RULES OF PYTHON CODE WRITING:
 10. All issues use **UTC+8** time. However, the local machine's default timezone is unknown. Please use `pytz.timezone('Asia/Shanghai')` to explicityly set the timezone to UTC+8.
 """
 
-def execute_act(instruction:str, background:str, history, attempt, kernel, logger, langfuse_trace=None, step_id=None) -> str:
+def execute_act(instruction:str, background:str, history, attempt, kernel, logger, obs_path:str, langfuse_trace=None, step_id=None) -> str:
 
     logger.debug("Start execution")
     t1 = datetime.now()
     if history == []:
         history = [
-                {'role': 'system', 'content': system.format(rule=rule, background=background, format=format)},
+                {'role': 'system', 'content': system.format(obs_path=obs_path, rule=rule, background=background, format=format)},
             ]
     code_pattern = re.compile(r"```python\n(.*?)\n```", re.DOTALL)
     code = ""
@@ -139,17 +151,17 @@ def execute_act(instruction:str, background:str, history, attempt, kernel, logge
                 code = response.strip()
             logger.debug(f"Raw Code:\n{code}")
             
-            if "import matplotlib" in code or "import seaborn" in code:
-                logger.warning("The generated visualization code detected.")
-                prompt.append({'role': 'assistant', 'content': code})
-                prompt.append({'role': 'user', 'content': "You are not permitted to generate visualizations. If the instruction requires visualization, please provide the text-based results."})
+            # if "import matplotlib" in code or "import seaborn" in code:
+            #     logger.warning("The generated visualization code detected.")
+            #     prompt.append({'role': 'assistant', 'content': code})
+            #     prompt.append({'role': 'user', 'content': "You are not permitted to generate visualizations. If the instruction requires visualization, please provide the text-based results."})
                 
-                if langfuse_trace:
-                    Code_generation_llm_generation.end(
-                        output="Visualization code detected and rejected",
-                        status="error"
-                    )
-                continue
+            #     if langfuse_trace:
+            #         Code_generation_llm_generation.end(
+            #             output="Visualization code detected and rejected",
+            #             status="error"
+            #         )
+            #     continue
                 
             # 创建执行跟踪
             if langfuse_trace:

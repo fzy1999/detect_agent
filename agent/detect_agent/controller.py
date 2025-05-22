@@ -119,10 +119,11 @@ Note that all the root cause components and reasons must be selected from the pr
 
 def control_loop(objective:str, plan:str, ap, bp, logger, obs_path:str, max_step = 15, max_turn = 3, langfuse_trace = None) -> str:
    
+    agent_promt = ap.rules.format(obs_path=obs_path)
     prompt = [
             {'role': 'system', 'content': system.format(objective=objective,
                                                         format=format,
-                                                        agent=ap.rules, 
+                                                        agent=agent_promt, 
                                                         background=bp.schema)},
             {'role': 'user', 'content': "Let's begin."}
         ]
@@ -238,6 +239,7 @@ def control_loop(objective:str, plan:str, ap, bp, logger, obs_path:str, max_step
                 attempt_actor, 
                 kernel, 
                 logger, 
+                obs_path,
                 langfuse_trace=executor_span, 
                 step_id=f"Step_{step+1}"
             )

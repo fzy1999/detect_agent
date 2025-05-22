@@ -62,15 +62,15 @@ cand = """## POSSIBLE ROOT CAUSE REASONS:
 
 schema = f"""## 遥测数据目录结构：
 
-您可以访问我们微服务系统中的遥测数据目录：dataset/Telecom/telemetry/
+您可以访问我们微服务系统中的遥测数据目录：/data/NAB/OpenRCA/dataset/Telecom/telemetry/
 
-在分析的时候请读取dataset/Telecom/telemetry/ 下面的所有日志的数据
-该目录包含按日期组织的子目录（例如，dataset/Telecom/telemetry/2020_04_11/）。
+在分析的时候请读取/data/NAB/OpenRCA/dataset/Telecom/telemetry/ 下面的所有日志的数据
+该目录包含按日期组织的子目录（例如，/data/NAB/OpenRCA/dataset/Telecom/telemetry/2020_04_11/）。
 
 对于metric文件夹下面每一个文件都需要进行分析
-在每个特定日期的目录中，您会找到以下子目录：metric 和 trace（例如，dataset/Telecom/telemetry/2020_04_11/metric/）。
+在每个特定日期的目录中，您会找到以下子目录：metric 和 trace（例如，/data/NAB/OpenRCA/dataset/Telecom/telemetry/2020_04_11/metric/）。
 
-这些子目录中的遥测数据以 CSV 格式存储（例如，dataset/Telecom/telemetry/2020_04_11/metric/metric_container.csv）。
+这些子目录中的遥测数据以 CSV 格式存储（例如，/data/NAB/OpenRCA/dataset/Telecom/telemetry/2020_04_11/metric/metric_container.csv）。
 
 数据模式
 指标文件：
