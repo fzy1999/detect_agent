@@ -12,7 +12,7 @@ project_root = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
 
 # 导入检测代理函数
-from rca.run_detect_agent import run_single_query
+from agent.run_detect_agent import run_single_query
 
 app = Flask(__name__)
 
@@ -130,4 +130,4 @@ def get_result():
     return jsonify({"result": result_dict["result"], "trace_id": result_dict["trace_id"]})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5080, debug=True, threaded=True)
+    app.run(host='0.0.0.0', port=5079, debug=True, threaded=True)

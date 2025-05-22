@@ -2,7 +2,7 @@ import os
 import yaml
 import time
 
-def load_config(config_path="rca/api_config.yaml"):
+def load_config(config_path="agent/api_config.yaml"):
     configs = dict(os.environ)
     with open(config_path, "r") as file:
         yaml_data = yaml.safe_load(file)

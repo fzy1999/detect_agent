@@ -1,4 +1,0 @@
-SOURCE:   "AI"
-MODEL:    "gemini-2.5-pro"
-API_KEY:  "D6apCSNBgPVQF3r2kBhdsda1@4033"
-API_BASE: "http://v2.open.venus.oa.com/llmproxy"

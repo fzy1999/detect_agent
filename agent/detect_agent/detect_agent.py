@@ -1,4 +1,4 @@
-from rca.baseline.detect_agent.controller import control_loop
+from agent.detect_agent.controller import control_loop
 from langfuse import Langfuse
 
 class Detect_Agent:
@@ -12,7 +12,7 @@ class Detect_Agent:
         logger.info(f"Objective: {instruction}")
         
         # 创建langfuse客户端（已经在run_detect_agent.py中初始化）
-        from rca.run_detect_agent import langfuse
+        from agent.run_detect_agent import langfuse
         
         # 创建trace
         trace = langfuse.trace(

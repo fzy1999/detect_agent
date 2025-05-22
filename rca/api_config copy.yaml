@@ -1,4 +1,0 @@
-SOURCE:   "AI"
-MODEL:    "qwen3-235b-a22b"
-API_KEY:  "D6apCSNBgPVQF3r2kBhdsda1@4033"
-API_BASE: "http://v2.open.venus.oa.com/llmproxy"
