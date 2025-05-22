@@ -145,7 +145,7 @@ def execute_act(instruction:str, background:str, history, attempt, kernel, logge
                 prompt.append({'role': 'user', 'content': "You are not permitted to generate visualizations. If the instruction requires visualization, please provide the text-based results."})
                 
                 if langfuse_trace:
-                    generation_span.end(
+                    Code_generation_llm_generation.end(
                         output="Visualization code detected and rejected",
                         status="error"
                     )
@@ -173,10 +173,7 @@ def execute_act(instruction:str, background:str, history, attempt, kernel, logge
                             output="Token length exceeded",
                             status="error"
                         )
-                        generation_span.end(
-                            output="Token length exceeded",
-                            status="error"
-                        )
+
                     continue
                     
                 t2 = datetime.now()
@@ -246,12 +243,7 @@ def execute_act(instruction:str, background:str, history, attempt, kernel, logge
                 prompt.append({'role': 'user', 'content': f"Execution failed:\n{result}\nPlease revise your code and retry."})
                 retry_flag = True
                 
-                # 结束本次生成跟踪
-                if langfuse_trace:
-                    generation_span.end(
-                        output=f"Execution failed: {result}",
-                        status="error"
-                    )
+
             
         except Exception as e:
             logger.error(e)
@@ -263,11 +255,7 @@ def execute_act(instruction:str, background:str, history, attempt, kernel, logge
                         output=str(e),
                         status="error"
                     )
-                if 'generation_span' in locals():
-                    generation_span.end(
-                        output=str(e),
-                        status="error"
-                    )
+
             
             time.sleep(1)
     
