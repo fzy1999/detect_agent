@@ -119,6 +119,17 @@ rules = """## 指标数据异常检测规则：
 
  • 计数类（error_cnt, 5xx）→ Poisson CUSUM (k=0.5, h=4)
 
+
+DWT-MLEAD is an anomaly detection algorithm that uses the Discrete Wavelet Transform (DWT) and Maximum Likelihood Estimation (MLE) to detect anomalies in univariate time series. The algorithm performs mutli-level DWT using the Haar wavelet, slides windows over the DWT coefficients, and estimates the likelihood of each window using a Gaussian distribution. Anomalies are detected by comparing the likelihoods to a quantile boundary in each level and passing down the anomaly counts to the individual time points, which we use as anomaly scores. The original paper [1] subsequently clusters the anomalies to determine the anomaly centers. This step is not implemented in this version.
+
+The k-Means anomaly detector uses k-Means clustering to detect anomalies in time series. The time series is split into windows of a fixed size, and the k-Means algorithm is used to cluster these windows. The anomaly score for each time point is the average Euclidean distance between the time point’s windows and the windows’ corresponding cluster centers.
+
+LeftSTAMPi [1] calculates the left matrix profile of a time series, which is the distance to the nearest neighbor of all already observed subsequences (i.e. all preceding subsequences) in the time series, in an incremental manner. The matrix profile is then used to calculate the anomaly score for each time point. The larger the distance to the nearest neighbor, the more anomalous the time point is.
+
+MERLIN is a discord discovery algorithm that uses a sliding window to find the most anomalous subsequence in a time series [1]. The algorithm is based on the Euclidean distance between subsequences of the time series.
+
+This is based on STRAY (Search TRace AnomalY) [1], which is a modification of HDoutliers [2]. HDoutliers is a powerful algorithm for the detection of anomalous observations in a dataset, which has (among other advantages) the ability to detect clusters of outliers in multidimensional data without requiring a model of the typical behavior of the system. However, it suffers from some limitations that affect its accuracy. STRAY is an extension of HDoutliers that uses extreme value theory for the anomolous threshold calculation, to deal with data streams that exhibit non-stationary behavior.
+
 参数全部用最近 7 d 数据滚动更新，落地成 Recording Rule 或 PromQL 内联表达式。
 
 ================================================================ 5 重算法（仅当 3 & 4 仍误报 / 漏报严重）
