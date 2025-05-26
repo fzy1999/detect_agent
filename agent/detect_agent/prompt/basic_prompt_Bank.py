@@ -1,3 +1,31 @@
+cand = """## POSSIBLE ROOT CAUSE REASONS:
+        
+- high CPU usage
+- high memory usage 
+- network latency 
+- network packet loss
+- high disk I/O read usage 
+- high disk space usage
+- high JVM CPU load 
+- JVM Out of Memory (OOM) Heap
+
+## POSSIBLE ROOT CAUSE COMPONENTS:
+
+- apache01
+- apache02
+- Tomcat01
+- Tomcat02
+- Tomcat04
+- Tomcat03
+- MG01
+- MG02
+- IG01
+- IG02
+- Mysql01
+- Mysql02
+- Redis01
+- Redis02"""
+
 schema = """## 遥测数据目录结构：
 
 - 您可以通过以下路径访问我们微服务系统中的遥测目录：`/data/NAB/OpenRCA/dataset/Bank/telemetry/`。
