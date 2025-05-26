@@ -126,11 +126,23 @@ if __name__ == "__main__":
 
 
     # bank
-    query = """
-    level,component,timestamp,datetime,reason
-pod,Mysql02,1614841020.0,2021-03-04 14:57:00,high memory usage
+#     query = """
+#     level,component,timestamp,datetime,reason
+# pod,Mysql02,1614841020.0,2021-03-04 14:57:00,high memory usage
 
-对于哪些指标制定合理的异常检测方案能够发现此类问题
-    """
+# 对于哪些指标制定合理的异常检测方案能够发现此类问题
+#     """
+#     query = """
+#     level,component,timestamp,datetime,reason
+# pod,Tomcat02,1614856920.0,2021-03-04 19:22:00,network latency
 
+# 对于哪些指标制定合理的异常检测方案能够发现此类问题
+#     """
+#     query = """
+#     level,component,timestamp,datetime,reason
+# pod,MG02,1615048320.0,2021-03-07 00:32:00,network packet loss
+
+# 对于哪些指标制定合理的异常检测方案能够发现此类问题
+#     """
+    query = "对Mysql02的指标配置异常检测方案"
     run_single_query(query, dataset, output_path)
