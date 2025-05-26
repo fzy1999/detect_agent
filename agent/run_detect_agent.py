@@ -111,7 +111,7 @@ if __name__ == "__main__":
     #     main(args, uid, dataset)
 
     output_path = "/data/NAB/OpenRCA/test"
-    dataset = "Telecom"
+    dataset = "Bank"
 
     ### bank
     # query = "对apache01的指标配置异常检测方案 CPU 利用率（OSLinux-CPU_CPU_CPUCpuUtil）、内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_MEMUsedMemPerc）、非缓存内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_NoCacheMemPerc）和 Apache 文件系统容量使用率（OSLinux-OSLinux_FILESYSTEM_-apache_FSCapacity）"
@@ -123,5 +123,14 @@ if __name__ == "__main__":
     # query = "监控所有物理机/虚拟机的CPU、内存、磁盘、网络基础状态"
     query = " 监控数据库服务的指标 db_007 （CPU_Used_Pct、MEM_Used_Pct、Tbs_Used_Pct）配置异常检测算法"
     # query = "监控关键中间件（如Redis）的连接数、队列等"
+
+
+    # bank
+    query = """
+    level,component,timestamp,datetime,reason
+pod,Mysql02,1614841020.0,2021-03-04 14:57:00,high memory usage
+
+对于哪些指标制定合理的异常检测方案能够发现此类问题
+    """
 
     run_single_query(query, dataset, output_path)
