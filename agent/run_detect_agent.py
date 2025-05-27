@@ -38,6 +38,8 @@ def run_single_query(query, dataset,output_path):
         import agent.detect_agent.prompt.basic_prompt_Bank as bp
     elif dataset == "Market/cloudbed-1" or dataset == "Market/cloudbed-2":
         import agent.detect_agent.prompt.basic_prompt_Market as bp
+    elif dataset == "VPC42":
+        import agent.detect_agent.prompt.basic_prompt_VPC42 as bp
 
     now_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
     obs_path = os.path.join(output_path, configs['MODEL'].split('/')[-1],now_time)
@@ -111,7 +113,7 @@ if __name__ == "__main__":
     #     main(args, uid, dataset)
 
     output_path = "/data/NAB/OpenRCA/test"
-    dataset = "Bank"
+    dataset = "VPC42"
 
     ### bank
     # query = "对apache01的指标配置异常检测方案 CPU 利用率（OSLinux-CPU_CPU_CPUCpuUtil）、内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_MEMUsedMemPerc）、非缓存内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_NoCacheMemPerc）和 Apache 文件系统容量使用率（OSLinux-OSLinux_FILESYSTEM_-apache_FSCapacity）"
@@ -121,7 +123,7 @@ if __name__ == "__main__":
     # query = "level,reason,component,timestamp,datetime service,db close,db_007,1590256020,2020-05-24 01:47:00,对于那些指标制定合理的异常检测方案，能够发现告警该问题"
     # query = "监控所有容器的CPU、内存使用，以及是否存活"
     # query = "监控所有物理机/虚拟机的CPU、内存、磁盘、网络基础状态"
-    query = " 监控数据库服务的指标 db_007 （CPU_Used_Pct、MEM_Used_Pct、Tbs_Used_Pct）配置异常检测算法"
+    # query = " 监控数据库服务的指标 db_007 （CPU_Used_Pct、MEM_Used_Pct、Tbs_Used_Pct）配置异常检测算法"
     # query = "监控关键中间件（如Redis）的连接数、队列等"
 
 
@@ -144,5 +146,18 @@ if __name__ == "__main__":
 
 # 对于哪些指标制定合理的异常检测方案能够发现此类问题
 #     """
-    query = "对Mysql02的指标配置异常检测方案"
+    # query = "对Mysql02的指标配置异常检测方案"
+
+
+
+
+    # VPC42
+    # query = "对dpdkport_E_LB_SG_SVC的指标配置异常检测方案"
+    # query = "对dpdkport_E_SVC_CC_OUT_OF_CONN的指标配置异常检测方案"
+    query = "对dpdkport_E_SVC_NOT_FOUND的指标配置异常检测方案"
+    # query = "对netSocketTCP的指标配置异常检测方案"
+    # query = "对stls_svc_deny_pkts的指标配置异常检测方案"
+    # query = "对svc_not_found_pps的指标配置异常检测方案"
+    # query = "对dpdkport_E_LB_SG_SVC的指标配置异常检测方案"
+
     run_single_query(query, dataset, output_path)
