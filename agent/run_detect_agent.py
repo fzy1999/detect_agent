@@ -40,6 +40,8 @@ def run_single_query(query, dataset,output_path):
         import agent.detect_agent.prompt.basic_prompt_Market as bp
     elif dataset == "VPC42":
         import agent.detect_agent.prompt.basic_prompt_VPC42 as bp
+    elif dataset == "CBS":
+        import agent.detect_agent.prompt.basic_prompt_CBS as bp
 
     now_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
     obs_path = os.path.join(output_path, configs['MODEL'].split('/')[-1],now_time)
@@ -113,7 +115,7 @@ if __name__ == "__main__":
     #     main(args, uid, dataset)
 
     output_path = "/data/NAB/OpenRCA/test"
-    dataset = "VPC42"
+    dataset = "CBS"
 
     ### bank
     # query = "对apache01的指标配置异常检测方案 CPU 利用率（OSLinux-CPU_CPU_CPUCpuUtil）、内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_MEMUsedMemPerc）、非缓存内存使用率（OSLinux-OSLinux_MEMORY_MEMORY_NoCacheMemPerc）和 Apache 文件系统容量使用率（OSLinux-OSLinux_FILESYSTEM_-apache_FSCapacity）"
@@ -154,10 +156,14 @@ if __name__ == "__main__":
     # VPC42
     # query = "对dpdkport_E_LB_SG_SVC的指标配置异常检测方案"
     # query = "对dpdkport_E_SVC_CC_OUT_OF_CONN的指标配置异常检测方案"
-    query = "对dpdkport_E_SVC_NOT_FOUND的指标配置异常检测方案"
+    # query = "对dpdkport_E_SVC_NOT_FOUND的指标配置异常检测方案"
     # query = "对netSocketTCP的指标配置异常检测方案"
     # query = "对stls_svc_deny_pkts的指标配置异常检测方案"
     # query = "对svc_not_found_pps的指标配置异常检测方案"
     # query = "对dpdkport_E_LB_SG_SVC的指标配置异常检测方案"
+
+    # CBS
+    query = "请结合指标语义,选取适当的cbs指标,对CBS的指标配置异常检测方案"
+
 
     run_single_query(query, dataset, output_path)
